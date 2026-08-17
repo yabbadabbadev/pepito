@@ -55,7 +55,7 @@ test('el mensaje de .not.toHaveNoUnhandledRequests() lleva el hint negado y dice
   }
 
   expect(stripAnsi(failure)).toMatch(/\.not\.toHaveNoUnhandledRequests\(/)
-  expect(failure).toContain('el tráfico llegó limpio')
+  expect(failure).toContain('the traffic came in clean')
 })
 
 test('network.idle() espera a que una petición lenta cierre antes de resolver', async () => {

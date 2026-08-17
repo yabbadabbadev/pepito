@@ -5,6 +5,6 @@ import { requireNetworkContext } from '../src/network-singleton'
 // para probar la guarda sin contaminar los tests que sí inicializan la red.
 test('pedir el contexto sin setupNetwork lanza con la instrucción de arreglo', () => {
   expect(() => requireNetworkContext('mount')).toThrow(
-    /setupNetwork\(handlers\) no se ha inicializado.*mount/s,
+    /setupNetwork\(handlers\) has not been initialized.*mount/s,
   )
 })

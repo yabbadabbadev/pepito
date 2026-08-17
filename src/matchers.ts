@@ -277,7 +277,7 @@ expect.extend({
       return {
         pass: false,
         message: () =>
-          'toHaveNoUnhandledRequests se usa a través de expect.network(), no sobre un descriptor de petición: expect.network().toHaveNoUnhandledRequests()',
+          'toHaveNoUnhandledRequests is used through expect.network(), not on a request descriptor: expect.network().toHaveNoUnhandledRequests()',
       }
     }
 

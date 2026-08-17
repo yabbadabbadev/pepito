@@ -177,7 +177,7 @@ export async function waitForNetworkIdle(
         })
         .join('\n  ')
       throw new Error(
-        `la red no se calmó en ${reportedTimeoutMs}ms, peticiones en vuelo:\n  ${dump}`,
+        `the network did not settle within ${reportedTimeoutMs}ms; in flight:\n  ${dump}`,
       )
     }
     await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL_MS))

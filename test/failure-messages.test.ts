@@ -21,12 +21,12 @@ const inFlightEntry: ResolvedRequest = {
 }
 
 test('sin tráfico observado, el volcado lo dice en vez de enseñar una lista vacía', () => {
-  expect(formatTraffic([])).toBe('  (sin tráfico observado)')
+  expect(formatTraffic([])).toBe('  (no traffic observed)')
 })
 
 test('una petición todavía en vuelo se vuelca como "sin veredicto" y "(sin respuesta)"', () => {
   const line = formatTraffic([inFlightEntry])
 
-  expect(line).toContain('[sin veredicto]')
-  expect(line).toContain('(sin respuesta)')
+  expect(line).toContain('[no verdict]')
+  expect(line).toContain('(no response)')
 })

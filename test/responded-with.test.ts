@@ -52,7 +52,7 @@ test('el mensaje de .not.toHaveRespondedWith() lleva el hint negado, no el posit
   }
 
   expect(stripAnsi(failure)).toMatch(/\.not\.toHaveRespondedWith\(/)
-  expect(failure).toContain('No esperaba:')
+  expect(failure).toContain('Not expected:')
 })
 
 test('una respuesta real vía passthrough NO cuenta: exige interceptada', async () => {

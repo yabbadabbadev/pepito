@@ -13,17 +13,17 @@ function formatQuery(searchParams: Record<string, string>): string {
 
 function formatFlags(entry: ResolvedRequest): string {
   const activeFlags = TRAFFIC_FLAGS.filter((flag) => entry[flag])
-  return activeFlags.length > 0 ? activeFlags.join('/') : 'sin veredicto'
+  return activeFlags.length > 0 ? activeFlags.join('/') : 'no verdict'
 }
 
 function formatTrafficLine(entry: ResolvedRequest): string {
-  const status = entry.status ?? '(sin respuesta)'
+  const status = entry.status ?? '(no response)'
   return `  ${entry.method} ${entry.path}${formatQuery(entry.searchParams)} → ${status} [${formatFlags(entry)}]`
 }
 
 /** Vuelca el tráfico observado, una línea por entrada, para incrustar en un mensaje de fallo. */
 export function formatTraffic(traffic: ResolvedRequest[]): string {
-  if (traffic.length === 0) return '  (sin tráfico observado)'
+  if (traffic.length === 0) return '  (no traffic observed)'
   return traffic.map(formatTrafficLine).join('\n')
 }
 
@@ -59,8 +59,8 @@ export function requestFailureMessage(messageContext: {
     // hint ya lo dice con el "not.", pero la línea de "Esperaba" sin más
     // seguiría leyéndose como el caso positivo si no cambia con ella.
     isNot
-      ? `No esperaba: ${utils.printExpected(describeSpec(spec))}`
-      : `Esperaba: ${utils.printExpected(describeSpec(spec))}`,
+      ? `Not expected: ${utils.printExpected(describeSpec(spec))}`
+      : `Expected: ${utils.printExpected(describeSpec(spec))}`,
   ]
 
   const candidate = traffic.find(
@@ -74,7 +74,7 @@ export function requestFailureMessage(messageContext: {
     if (diff) sections.push(diff)
   }
 
-  sections.push(`Tráfico observado:\n${formatTraffic(traffic)}`)
+  sections.push(`Observed traffic:\n${formatTraffic(traffic)}`)
 
   return sections.join('\n\n')
 }
@@ -100,15 +100,15 @@ export function requestCountFailureMessage(messageContext: {
   // un eco sin sentido si no dice también que ese conteo es justo el que no
   // se esperaba.
   const leadLine = isNot
-    ? `No esperaba encontrar exactamente ${expectedCount} petición(es) a ${utils.printExpected(describeSpec(spec))}, y encontré ${foundCount}`
-    : `Esperaba ${expectedCount} petición(es) a ${utils.printExpected(describeSpec(spec))}, encontré ${foundCount}`
+    ? `Did not expect exactly ${expectedCount} request(s) to ${utils.printExpected(describeSpec(spec))}, yet found ${foundCount}`
+    : `Expected ${expectedCount} request(s) to ${utils.printExpected(describeSpec(spec))}, found ${foundCount}`
 
   const sections = [
     utils.matcherHint('toHaveBeenRequestedTimes', undefined, undefined, {
       isNot,
     }),
     leadLine,
-    `Tráfico observado:\n${formatTraffic(traffic)}`,
+    `Observed traffic:\n${formatTraffic(traffic)}`,
   ]
 
   return sections.join('\n\n')
@@ -132,8 +132,8 @@ export function noUnhandledRequestsFailureMessage(messageContext: {
   // "Peticiones sin handler:" seguido de nada es el bug que este `isNot`
   // arregla: la aserción negada exigía tráfico sin handler y no lo hubo.
   const leadLine = isNot
-    ? 'Esperaba encontrar alguna petición sin handler, pero el tráfico llegó limpio'
-    : `Peticiones sin handler:\n${unhandledEntries
+    ? 'Expected to find some request without a handler, but the traffic came in clean'
+    : `Unhandled requests:\n${unhandledEntries
         .map((entry) => `  ${entry.method} ${entry.path}`)
         .join('\n')}`
 
@@ -142,7 +142,7 @@ export function noUnhandledRequestsFailureMessage(messageContext: {
       isNot,
     }),
     leadLine,
-    `Tráfico observado:\n${formatTraffic(traffic)}`,
+    `Observed traffic:\n${formatTraffic(traffic)}`,
   ]
 
   return sections.join('\n\n')
@@ -175,8 +175,8 @@ export function respondedWithFailureMessage(messageContext: {
   const { utils, spec, expected, traffic, isNot } = messageContext
 
   const leadLine = isNot
-    ? `No esperaba: ${utils.printExpected(describeSpec(spec))} respondida con ${utils.printExpected(describeExpectedResponse(expected))}`
-    : `Esperaba: ${utils.printExpected(describeSpec(spec))} respondida con ${utils.printExpected(describeExpectedResponse(expected))}`
+    ? `Not expected: ${utils.printExpected(describeSpec(spec))} responded with ${utils.printExpected(describeExpectedResponse(expected))}`
+    : `Expected: ${utils.printExpected(describeSpec(spec))} responded with ${utils.printExpected(describeExpectedResponse(expected))}`
 
   const sections = [
     utils.matcherHint('toHaveRespondedWith', undefined, undefined, { isNot }),
@@ -201,7 +201,7 @@ export function respondedWithFailureMessage(messageContext: {
     if (diff) sections.push(diff)
   }
 
-  sections.push(`Tráfico observado:\n${formatTraffic(traffic)}`)
+  sections.push(`Observed traffic:\n${formatTraffic(traffic)}`)
 
   return sections.join('\n\n')
 }

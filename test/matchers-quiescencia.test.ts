@@ -70,7 +70,7 @@ test('el mensaje de .not.toHaveBeenRequested() lleva el hint negado, no el posit
   }
 
   expect(stripAnsi(failure)).toMatch(/\.not\.toHaveBeenRequested\(/)
-  expect(failure).toContain('No esperaba:')
+  expect(failure).toContain('Not expected:')
 })
 
 test('el mensaje de .not.toHaveBeenRequestedTimes(n) lleva el hint negado y dice que sí encontró ese conteo', async () => {
@@ -87,5 +87,5 @@ test('el mensaje de .not.toHaveBeenRequestedTimes(n) lleva el hint negado y dice
   }
 
   expect(stripAnsi(failure)).toMatch(/\.not\.toHaveBeenRequestedTimes\(/)
-  expect(failure).toContain('No esperaba')
+  expect(failure).toContain('Did not expect')
 })

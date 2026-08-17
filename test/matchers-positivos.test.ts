@@ -72,5 +72,5 @@ test('el mensaje de .not.toHaveBeenIntercepted() lleva el hint negado, no el pos
   }
 
   expect(stripAnsi(failure)).toMatch(/\.not\.toHaveBeenIntercepted\(/)
-  expect(failure).toContain('No esperaba:')
+  expect(failure).toContain('Not expected:')
 })

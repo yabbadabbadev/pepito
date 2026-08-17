@@ -49,14 +49,14 @@ test('los handlers de network tienen prioridad sobre los de la suite', async () 
 test('un path que no empieza por / falla con instrucción, no con SecurityError', async () => {
   await expect(
     mount(<RoutedApp />, { path: 'https://otra.web/products' }),
-  ).rejects.toThrow(/same-origin.*empiece por '\/'/s)
+  ).rejects.toThrow(/same-origin.*starts with '\/'/s)
 })
 
 test('un path protocol-relative pasa el prefijo "/" pero no es same-origin', async () => {
   await expect(
     mount(<RoutedApp />, { path: '//evil.com/products' }),
-  ).rejects.toThrow(/same-origin.*empiece por '\/'/s)
+  ).rejects.toThrow(/same-origin.*starts with '\/'/s)
   await expect(
     mount(<RoutedApp />, { path: '/\\evil.com/products' }),
-  ).rejects.toThrow(/same-origin.*empiece por '\/'/s)
+  ).rejects.toThrow(/same-origin.*starts with '\/'/s)
 })

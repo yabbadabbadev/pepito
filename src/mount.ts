@@ -64,9 +64,9 @@ export async function mount(
 
   if (path !== undefined && !isSameOriginPath(path)) {
     throw new Error(
-      `pepito: path debe ser una URI same-origin que empiece por '/'; ` +
-        `recibido: ${path}. Un origen distinto se mockea en los handlers ` +
-        `de MSW, no en el montaje.`,
+      `pepito: path must be a same-origin URI that starts with '/'; ` +
+        `received: ${path}. A different origin is mocked in the MSW ` +
+        `handlers, not in the mount.`,
     )
   }
 

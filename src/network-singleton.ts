@@ -20,7 +20,7 @@ export function registerNetworkContext(nextContext: NetworkContext): void {
 export function requireNetworkContext(caller: string): NetworkContext {
   if (!context) {
     throw new Error(
-      `pepito: setupNetwork(handlers) no se ha inicializado. Llámalo en tu fichero de setup (setupFiles de vitest.config) antes de usar ${caller}.`,
+      `pepito: setupNetwork(handlers) has not been initialized. Call it in your setup file (setupFiles in vitest.config) before using ${caller}.`,
     )
   }
   return context
