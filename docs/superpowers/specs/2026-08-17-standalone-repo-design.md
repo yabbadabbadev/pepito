@@ -20,8 +20,8 @@ Date: 2026-08-17. Status: approved, pending execution (plan alongside).
 4. **Build stays `tsc`** — deliberate, recorded in
    `.claude/docs/references/build-tooling.md`: tsc emits the `.d.ts` half of
    the product with the same compiler that type-checks (single source of
-   truth); SWC/esbuild are transpile-only (no declarations → second toolchain
-   + drift risk) and solve a speed problem a ~15-module lib doesn't have;
+   truth); SWC/esbuild are transpile-only (no declarations → second toolchain +
+   drift risk) and solve a speed problem a ~15-module lib doesn't have;
    bundlers add tree-shaking risk to a package that registers matchers via
    import side effects; escape hatches if ever needed: tsgo for speed, tsup
    for dual-format JS with tsc kept for types.

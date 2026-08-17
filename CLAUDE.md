@@ -13,11 +13,11 @@ acceptance suite.
 
 ## Status
 
-| Phase                              | State                                                    |
-| ---------------------------------- | -------------------------------------------------------- |
-| Migration spec                     | written: `docs/superpowers/specs/2026-08-17-standalone-repo-design.md` |
-| Migration plan                     | written: `docs/superpowers/plans/2026-08-17-standalone-repo.md` |
-| Execution                          | **pending** — run the plan with subagent-driven-development |
+| Phase          | State                                                                  |
+| -------------- | ---------------------------------------------------------------------- |
+| Migration spec | written: `docs/superpowers/specs/2026-08-17-standalone-repo-design.md` |
+| Migration plan | written: `docs/superpowers/plans/2026-08-17-standalone-repo.md`        |
+| Execution      | **pending** — run the plan with subagent-driven-development            |
 
 ## Non-negotiable rules
 

@@ -1,0 +1,92 @@
+{
+  "name": "@yabbadabbadev/pepito",
+  "version": "0.1.0",
+  "description": "Utilidades de test de red para Vitest browser mode: montaje de la aplicación y matchers sobre el tráfico observado por MSW",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yabbadabbadev/pepito.git"
+  },
+  "homepage": "https://github.com/yabbadabbadev/pepito",
+  "bugs": {
+    "url": "https://github.com/yabbadabbadev/pepito/issues"
+  },
+  "keywords": [
+    "vitest",
+    "browser-mode",
+    "msw",
+    "testing",
+    "network",
+    "matchers"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:verbose": "vitest run --reporter=verbose",
+    "coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "pack:local": "npm run build && npm pack --pack-destination dist-pack",
+    "setup": "playwright install chromium",
+    "lint": "eslint --cache . --report-unused-disable-directives --max-warnings 0",
+    "lint-fix": "eslint --cache . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "peerDependencies": {
+    "msw": "^2.15.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vitest": "^4.0.0",
+    "vitest-browser-react": "^2.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
+    "@typescript-eslint/parser": "^8.67.0",
+    "@vitejs/plugin-react": "^6.0.5",
+    "@vitest/browser": "^4.1.10",
+    "@vitest/browser-playwright": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "eslint-plugin-vitest-globals": "^1.6.1",
+    "globals": "^17.9.0",
+    "msw": "^2.15.0",
+    "playwright": "^1.62.1",
+    "prettier": "^3.9.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10",
+    "vitest-browser-react": "^2.2.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
+}
