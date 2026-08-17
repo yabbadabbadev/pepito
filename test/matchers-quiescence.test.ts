@@ -10,36 +10,36 @@ test('not.toHaveBeenRequested passes when there really was no request', async ()
 
 test('DETERMINISM: not waits for calm and catches the slow request in flight', async () => {
   worker.use(
-    http.get('/api/lenta', async () => {
+    http.get('/api/slow', async () => {
       await delay(120)
       return HttpResponse.json(ProductListMother.empty())
     }),
   )
-  void fetch('/api/lenta')
+  void fetch('/api/slow')
 
   // Without quiescence this would pass falsely: the request isn't visible yet.
   let failure = ''
   try {
-    await expect(get('/api/lenta')).not.toHaveBeenRequested()
+    await expect(get('/api/slow')).not.toHaveBeenRequested()
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }
-  expect(failure).toContain('/api/lenta')
+  expect(failure).toContain('/api/slow')
 })
 
 test('DETERMINISM: Times(2) does not confuse 2 with 3 even though the third is in flight', async () => {
   worker.use(
-    http.get('/api/lenta', async () => {
+    http.get('/api/slow', async () => {
       await delay(120)
       return HttpResponse.json(ProductListMother.empty())
     }),
   )
-  await Promise.all([fetch('/api/lenta'), fetch('/api/lenta')])
-  void fetch('/api/lenta') // the third, still in flight when asserting
+  await Promise.all([fetch('/api/slow'), fetch('/api/slow')])
+  void fetch('/api/slow') // the third, still in flight when asserting
 
   let failure = ''
   try {
-    await expect(get('/api/lenta')).toHaveBeenRequestedTimes(2)
+    await expect(get('/api/slow')).toHaveBeenRequestedTimes(2)
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }
@@ -48,15 +48,15 @@ test('DETERMINISM: Times(2) does not confuse 2 with 3 even though the third is i
 
 test('Times(3) passes when there are exactly 3', async () => {
   worker.use(
-    http.get('/api/rapida', () => HttpResponse.json(ProductListMother.empty())),
+    http.get('/api/fast', () => HttpResponse.json(ProductListMother.empty())),
   )
   await Promise.all([
-    fetch('/api/rapida'),
-    fetch('/api/rapida'),
-    fetch('/api/rapida'),
+    fetch('/api/fast'),
+    fetch('/api/fast'),
+    fetch('/api/fast'),
   ])
 
-  await expect(get('/api/rapida')).toHaveBeenRequestedTimes(3)
+  await expect(get('/api/fast')).toHaveBeenRequestedTimes(3)
 })
 
 test('the .not.toHaveBeenRequested() message carries the negated hint, not the positive one', async () => {
@@ -75,13 +75,13 @@ test('the .not.toHaveBeenRequested() message carries the negated hint, not the p
 
 test('the .not.toHaveBeenRequestedTimes(n) message carries the negated hint and says it did find that count', async () => {
   worker.use(
-    http.get('/api/rapida', () => HttpResponse.json(ProductListMother.empty())),
+    http.get('/api/fast', () => HttpResponse.json(ProductListMother.empty())),
   )
-  await fetch('/api/rapida')
+  await fetch('/api/fast')
 
   let failure = ''
   try {
-    await expect(get('/api/rapida')).not.toHaveBeenRequestedTimes(1)
+    await expect(get('/api/fast')).not.toHaveBeenRequestedTimes(1)
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }

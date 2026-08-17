@@ -11,7 +11,7 @@ test('a clean suite has no requests without a handler', async () => {
 })
 
 test('a request without a handler trips the guardrail with its path', async () => {
-  await fetch('/api/olvidada')
+  await fetch('/api/forgotten')
 
   let failure = ''
   try {
@@ -19,7 +19,7 @@ test('a request without a handler trips the guardrail with its path', async () =
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }
-  expect(failure).toContain('/api/olvidada')
+  expect(failure).toContain('/api/forgotten')
 })
 
 test('deliberate passthrough does NOT count as unhandled', async () => {
@@ -60,17 +60,17 @@ test('the .not.toHaveNoUnhandledRequests() message carries the negated hint and 
 
 test('network.idle() waits for a slow request to close before resolving', async () => {
   worker.use(
-    http.get('/api/lenta', async () => {
+    http.get('/api/slow', async () => {
       await delay(200)
       return HttpResponse.json(ProductListMother.empty())
     }),
   )
-  void fetch('/api/lenta')
+  void fetch('/api/slow')
 
   await network.idle()
 
-  await expect(get('/api/lenta')).toHaveBeenRequestedTimes(1)
-  await expect(get('/api/lenta')).toHaveRespondedWith(200)
+  await expect(get('/api/slow')).toHaveBeenRequestedTimes(1)
+  await expect(get('/api/slow')).toHaveRespondedWith(200)
 })
 
 test('network.idle() with the network already calm resolves without throwing', async () => {

@@ -9,7 +9,7 @@ const inFlightEntry: ResolvedRequest = {
   requestId: 'r1',
   method: 'GET',
   origin: 'http://localhost',
-  path: '/api/lenta',
+  path: '/api/slow',
   searchParams: {},
   matched: false,
   mocked: false,

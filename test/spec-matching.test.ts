@@ -21,19 +21,19 @@ const observedWith = (partial: Partial<ResolvedRequest>): ResolvedRequest => ({
 test('matches by method and path', () => {
   expect(matchesSpec(observedWith({}), get('/api/products'))).toBe(true)
   expect(matchesSpec(observedWith({}), post('/api/products'))).toBe(false)
-  expect(matchesSpec(observedWith({}), get('/api/otra'))).toBe(false)
+  expect(matchesSpec(observedWith({}), get('/api/other'))).toBe(false)
 })
 
 test('the body matches by subset: extra keys in the observed one do not matter', () => {
   const observed = observedWith({
     method: 'POST',
-    body: { product_name: 'Leche', id: 7, created_at: 'hoy' },
+    body: { product_name: 'Milk', id: 7, created_at: 'today' },
   })
 
   expect(
     matchesSpec(
       observed,
-      post('/api/products', { body: { product_name: 'Leche' } }),
+      post('/api/products', { body: { product_name: 'Milk' } }),
     ),
   ).toBe(true)
 })
@@ -62,19 +62,19 @@ test('with exact, a key missing from the observed one also breaks the match', ()
 
 test('searchParams matches by subset and exact requires equality', () => {
   const observed = observedWith({
-    searchParams: { filtro: 'pan', pagina: '2' },
+    searchParams: { filter: 'bread', page: '2' },
   })
 
   expect(
     matchesSpec(
       observed,
-      get('/api/products', { searchParams: { filtro: 'pan' } }),
+      get('/api/products', { searchParams: { filter: 'bread' } }),
     ),
   ).toBe(true)
   expect(
     matchesSpec(
       observed,
-      get('/api/products', { searchParams: { filtro: 'pan' }, exact: true }),
+      get('/api/products', { searchParams: { filter: 'bread' }, exact: true }),
     ),
   ).toBe(false)
 })
@@ -82,13 +82,13 @@ test('searchParams matches by subset and exact requires equality', () => {
 test('equality per key is deep, not by reference', () => {
   const observed = observedWith({
     method: 'POST',
-    body: { detalle: { unidades: 3 } },
+    body: { detail: { units: 3 } },
   })
 
   expect(
     matchesSpec(
       observed,
-      post('/api/products', { body: { detalle: { unidades: 3 } } }),
+      post('/api/products', { body: { detail: { units: 3 } } }),
     ),
   ).toBe(true)
 })
@@ -118,13 +118,13 @@ test('null is not treated as a plain object even though typeof says so', () => {
 test('a nested value of a different type does not match, even when neither is null', () => {
   const observed = observedWith({
     method: 'POST',
-    body: { detalle: 'sin estructurar' },
+    body: { detail: 'unstructured' },
   })
 
   expect(
     matchesSpec(
       observed,
-      post('/api/products', { body: { detalle: { unidades: 3 } } }),
+      post('/api/products', { body: { detail: { units: 3 } } }),
     ),
   ).toBe(false)
 })
@@ -132,24 +132,24 @@ test('a nested value of a different type does not match, even when neither is nu
 test('a nested null value does not match against a nested object', () => {
   const observed = observedWith({
     method: 'POST',
-    body: { detalle: { unidades: 3 } },
+    body: { detail: { units: 3 } },
   })
 
   expect(
-    matchesSpec(observed, post('/api/products', { body: { detalle: null } })),
+    matchesSpec(observed, post('/api/products', { body: { detail: null } })),
   ).toBe(false)
 })
 
 test('a nested array does not match against a nested object, even though both are "object"', () => {
   const observed = observedWith({
     method: 'POST',
-    body: { detalle: [1, 2] },
+    body: { detail: [1, 2] },
   })
 
   expect(
     matchesSpec(
       observed,
-      post('/api/products', { body: { detalle: { a: 1 } } }),
+      post('/api/products', { body: { detail: { a: 1 } } }),
     ),
   ).toBe(false)
 })
@@ -157,8 +157,8 @@ test('a nested array does not match against a nested object, even though both ar
 test('with no body or searchParams in the spec, neither is checked', () => {
   const observed = observedWith({
     method: 'POST',
-    body: { cualquiera: true },
-    searchParams: { cualquiera: 'si' },
+    body: { anything: true },
+    searchParams: { anything: 'yes' },
   })
 
   expect(matchesSpec(observed, post('/api/products'))).toBe(true)

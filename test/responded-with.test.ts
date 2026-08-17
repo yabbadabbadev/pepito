@@ -6,11 +6,11 @@ import { ProductListMother } from './mothers/product-list-mother'
 
 test('matches by status alone', async () => {
   worker.use(
-    http.get('/api/rota', () => HttpResponse.json(null, { status: 500 })),
+    http.get('/api/broken', () => HttpResponse.json(null, { status: 500 })),
   )
-  await fetch('/api/rota')
+  await fetch('/api/broken')
 
-  await expect(get('/api/rota')).toHaveRespondedWith(500)
+  await expect(get('/api/broken')).toHaveRespondedWith(500)
 })
 
 test('matches by status and a subset of the response body', async () => {
@@ -24,20 +24,20 @@ test('matches by status and a subset of the response body', async () => {
 
 test('matches by subset when the response body is an object, not an array', async () => {
   worker.use(
-    http.get('/api/producto/1', () =>
+    http.get('/api/product/1', () =>
       HttpResponse.json({
         id: 1,
-        product_name: 'Leche entera',
+        product_name: 'Whole milk',
         stock: 42,
         updated_at: '2026-08-13',
       }),
     ),
   )
-  await fetch('/api/producto/1')
+  await fetch('/api/product/1')
 
-  await expect(get('/api/producto/1')).toHaveRespondedWith({
+  await expect(get('/api/product/1')).toHaveRespondedWith({
     status: 200,
-    body: { product_name: 'Leche entera' },
+    body: { product_name: 'Whole milk' },
   })
 })
 
@@ -97,8 +97,8 @@ test('a nested body that does not match shows which field changed, not two unrel
     await expect(get('/api/products')).toHaveRespondedWith({
       status: 200,
       body: [
-        { id: 1, product_name: 'Leche entera' },
-        { id: 2, product_name: 'Pan integral' },
+        { id: 1, product_name: 'Whole milk' },
+        { id: 2, product_name: 'Rye bread' },
       ],
     })
   } catch (error) {
@@ -107,7 +107,7 @@ test('a nested body that does not match shows which field changed, not two unrel
   // Both product names have to appear: the diff compares value against
   // value in the same field (`body` on both sides), not two unrelated
   // blocks (`body` disappears, `responseBody` appears).
-  expect(failure).toContain('Pan de pueblo') // the real value, untouched
-  expect(failure).toContain('Pan integral') // the expected value, which didn't match
+  expect(failure).toContain('Country bread') // the real value, untouched
+  expect(failure).toContain('Rye bread') // the expected value, which didn't match
   expect(failure).not.toContain('responseBody')
 })

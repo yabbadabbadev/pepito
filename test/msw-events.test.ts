@@ -27,19 +27,19 @@ test('REGRESSION gotcha 1: a POST body is readable even if the handler consumes 
   await fetch('/api/products', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ product_name: 'Leche' }),
+    body: JSON.stringify({ product_name: 'Milk' }),
   })
 
   const [entry] = await snapshotTraffic()
 
-  expect(entry?.body).toEqual({ product_name: 'Leche' })
+  expect(entry?.body).toEqual({ product_name: 'Milk' })
 })
 
 test('a mocked request ends up matched, mocked and with a response status and body', async () => {
   await fetch('/api/products', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ product_name: 'Pan' }),
+    body: JSON.stringify({ product_name: 'Bread' }),
   })
   await waitForNetworkIdle()
 
@@ -48,7 +48,7 @@ test('a mocked request ends up matched, mocked and with a response status and bo
   expect(entry?.matched).toBe(true)
   expect(entry?.mocked).toBe(true)
   expect(entry?.status).toBe(201)
-  expect(entry?.responseBody).toEqual({ product_name: 'Pan' })
+  expect(entry?.responseBody).toEqual({ product_name: 'Bread' })
 })
 
 test('REGRESSION gotcha 2: passthrough ends up matched but NOT mocked', async () => {
@@ -63,7 +63,7 @@ test('REGRESSION gotcha 2: passthrough ends up matched but NOT mocked', async ()
 })
 
 test('a request without a handler ends up unhandled and bypassed', async () => {
-  await fetch('/api/nadie-la-espera')
+  await fetch('/api/nobody-expects-it')
   await waitForNetworkIdle()
 
   const [entry] = await snapshotTraffic()
@@ -74,10 +74,10 @@ test('a request without a handler ends up unhandled and bypassed', async () => {
 
 test('a mocked response with no real body does not break the registry: responseBody stays undefined', async () => {
   worker.use(
-    http.get('/api/sin-cuerpo', () => new HttpResponse(null, { status: 204 })),
+    http.get('/api/empty-body', () => new HttpResponse(null, { status: 204 })),
   )
 
-  await fetch('/api/sin-cuerpo')
+  await fetch('/api/empty-body')
   await waitForNetworkIdle()
 
   const [entry] = await snapshotTraffic()

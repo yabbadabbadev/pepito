@@ -3,8 +3,8 @@ interface ProductResponse {
   product_name: string
 }
 
-const milk = { id: 1, product_name: 'Leche entera' } satisfies ProductResponse
-const bread = { id: 2, product_name: 'Pan de pueblo' } satisfies ProductResponse
+const milk = { id: 1, product_name: 'Whole milk' } satisfies ProductResponse
+const bread = { id: 2, product_name: 'Country bread' } satisfies ProductResponse
 
 export const ProductListMother = {
   catalog: (): ProductResponse[] => [milk, bread],

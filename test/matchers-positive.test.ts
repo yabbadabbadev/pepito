@@ -29,12 +29,12 @@ test('ACCEPTANCE CRITERION: passthrough satisfies toHaveBeenRequested but NOT to
 })
 
 test('the failure message carries the observed traffic, color and diff', async () => {
-  await fetch('/api/products?filtro=pan')
+  await fetch('/api/products?filter=bread')
 
   let failure = ''
   try {
     await expect(
-      get('/api/products', { searchParams: { filtro: 'chocolate' } }),
+      get('/api/products', { searchParams: { filter: 'chocolate' } }),
     ).toHaveBeenRequested()
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)

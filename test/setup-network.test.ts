@@ -21,16 +21,16 @@ test('1: dirties everything the cleanup must undo', async () => {
   worker.use(
     http.get('/api/products', () => HttpResponse.json(null, { status: 500 })),
   )
-  history.pushState({}, '', '/ruta-heredada?sucia=1')
+  history.pushState({}, '', '/inherited-route?dirty=1')
   localStorage.setItem('token', 'abc')
-  document.cookie = 'sesion=xyz'
+  document.cookie = 'session=xyz'
 })
 
 test('2: the registry, the handlers, the URL and the storage come back clean', async () => {
   expect(await snapshotTraffic()).toHaveLength(0)
   expect(location.href).toBe(initialHrefBeforeSetup)
   expect(localStorage.getItem('token')).toBeNull()
-  expect(document.cookie).not.toContain('sesion=xyz')
+  expect(document.cookie).not.toContain('session=xyz')
 
   const response = await fetch('/api/products')
   expect(response.status).toBe(200) // test 1's override was undone

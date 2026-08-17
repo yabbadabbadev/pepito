@@ -24,14 +24,14 @@ test('a recorded request appears in the snapshot with its body resolved', async 
   recordRequestStart('r1', {
     ...productsRequestStart(),
     method: 'POST',
-    body: Promise.resolve({ product_name: 'Leche' }),
+    body: Promise.resolve({ product_name: 'Milk' }),
   })
 
   const traffic = await snapshotTraffic()
 
   expect(traffic).toHaveLength(1)
   expect(traffic[0]?.method).toBe('POST')
-  expect(traffic[0]?.body).toEqual({ product_name: 'Leche' })
+  expect(traffic[0]?.body).toEqual({ product_name: 'Milk' })
   expect(traffic[0]?.matched).toBe(false)
 })
 
@@ -60,10 +60,10 @@ test('a verdict for an unknown request is ignored without breaking anything', as
   // event can arrive for a requestId that resetTraffic() already cleared
   // from the registry, and none of them should create a phantom entry or
   // throw.
-  recordMatch('fantasma')
-  recordMockedResponse('fantasma', 200, Promise.resolve(undefined))
-  recordBypassResponse('fantasma', 404)
-  recordUnhandled('fantasma')
+  recordMatch('phantom')
+  recordMockedResponse('phantom', 200, Promise.resolve(undefined))
+  recordBypassResponse('phantom', 404)
+  recordUnhandled('phantom')
 
   expect(await snapshotTraffic()).toHaveLength(0)
   expect(inFlightCount()).toBe(0)
@@ -89,10 +89,10 @@ test('waitForNetworkIdle resolves when the network settles', async () => {
 test('waitForNetworkIdle exhausts the timeout by THROWING with the dump of what is pending', async () => {
   recordRequestStart('r1', {
     ...productsRequestStart(),
-    path: '/api/colgada',
+    path: '/api/stuck',
   })
 
-  await expect(waitForNetworkIdle(120)).rejects.toThrow(/\/api\/colgada/)
+  await expect(waitForNetworkIdle(120)).rejects.toThrow(/\/api\/stuck/)
 })
 
 test('waitForNetworkIdle reports the TOTAL budget when it is given a different one from the real one', async () => {
@@ -102,7 +102,7 @@ test('waitForNetworkIdle reports the TOTAL budget when it is given a different o
   // report a remaining fraction of milliseconds instead of the real total.
   recordRequestStart('r1', {
     ...productsRequestStart(),
-    path: '/api/colgada',
+    path: '/api/stuck',
   })
 
   await expect(waitForNetworkIdle(1, 4000)).rejects.toThrow(/4000ms/)
