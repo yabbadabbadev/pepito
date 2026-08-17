@@ -38,5 +38,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Closes the tsconfig.build.json (types: []) blind spot: the typecheck
+      # step above uses tsconfig.json, not the build one, so a broken dist/
+      # could pass this gate unnoticed until a manual `npm run pack:local`.
+      - name: Build
+        run: npm run build
+
       - name: Tests with coverage (90/90 threshold enforced in config)
         run: npm run coverage
