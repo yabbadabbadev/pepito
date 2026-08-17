@@ -44,6 +44,7 @@ test('the failure message carries the observed traffic, color and diff', async (
   expect(failure).toContain(`${String.fromCharCode(27)}[`) // ANSI, measured in a spike
   expect(failure).toContain('- Expected')
   expect(failure).toContain('+ Received')
+  expect(failure).toContain('Observed traffic:')
 })
 
 test('with no request to the same method and route, the message does not look for a diff that does not exist', async () => {
@@ -56,6 +57,7 @@ test('with no request to the same method and route, the message does not look fo
     failure = error instanceof Error ? error.message : String(error)
   }
 
+  expect(failure).toContain('Expected: ') // the positive label
   expect(failure).toContain('/api/never-requested') // what was expected, in the hint
   expect(failure).toContain('/api/products') // the real traffic, in the dump
   expect(failure).not.toContain('- Expected') // no candidate, no diff to show

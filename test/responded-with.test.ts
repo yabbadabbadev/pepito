@@ -76,6 +76,7 @@ test('the wrong status shows the response diff', async () => {
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }
+  expect(failure).toContain('Expected: ') // the positive label
   expect(failure).toContain('- Expected')
   expect(failure).toContain('201')
   expect(failure).toContain('200')

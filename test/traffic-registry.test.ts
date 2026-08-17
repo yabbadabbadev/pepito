@@ -92,7 +92,9 @@ test('waitForNetworkIdle exhausts the timeout by THROWING with the dump of what 
     path: '/api/stuck',
   })
 
-  await expect(waitForNetworkIdle(120)).rejects.toThrow(/\/api\/stuck/)
+  await expect(waitForNetworkIdle(120)).rejects.toThrow(
+    /did not settle within 120ms; in flight:[\s\S]*\/api\/stuck/,
+  )
 })
 
 test('waitForNetworkIdle reports the TOTAL budget when it is given a different one from the real one', async () => {

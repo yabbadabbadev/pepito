@@ -44,6 +44,8 @@ test('DETERMINISM: Times(2) does not confuse 2 with 3 even though the third is i
     failure = error instanceof Error ? error.message : String(error)
   }
   expect(failure).toMatch(/3/) // the message says how many it actually found
+  expect(failure).toContain('Expected 2 request(s)')
+  expect(failure).toContain('found 3')
 })
 
 test('Times(3) passes when there are exactly 3', async () => {

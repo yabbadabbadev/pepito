@@ -19,6 +19,7 @@ test('a request without a handler trips the guardrail with its path', async () =
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }
+  expect(failure).toContain('Unhandled requests:')
   expect(failure).toContain('/api/forgotten')
 })
 

@@ -120,7 +120,7 @@ export async function snapshotAfterIdle(): Promise<ResolvedRequest[]> {
 // narrows the practical failure margin from one interval to two — reasoned
 // from how `waitForNetworkIdle` works, not measured: this harness is too
 // fast to reproduce the contended CI that motivates the change. The
-// DETERMINISM tests in matchers-quiescencia.test.ts measure something real
+// DETERMINISM tests in matchers-quiescence.test.ts measure something real
 // but different: that the full mechanism (margin + double observation) is
 // needed against a naive check or no wait at all, not that the second
 // observation alone is detectable in this harness (verified by mutation,
@@ -145,7 +145,7 @@ export async function snapshotAfterIdle(): Promise<ResolvedRequest[]> {
  * Single decision point between retrying and waiting for calm. `.not`
  * needs quiescence: retrying until something shows up, applied to an
  * absence, would give a false positive with any request still in flight
- * (the DETERMINISM test in matchers-quiescencia.test.ts catches exactly
+ * (the DETERMINISM test in matchers-quiescence.test.ts catches exactly
  * that). The positive case keeps the retrying poll because there it's the
  * request arriving that matters, not the whole network going quiet.
  */
