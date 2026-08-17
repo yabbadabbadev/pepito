@@ -23,10 +23,16 @@ governs every ambiguity.
   (no semicolons, single quotes, 80), coverage 90/90 on src/, TDD visible
   where behavior changes (message translation IS behavior: tests first),
   TSDoc on all exports, the four AI-smell bans, no brand references.
-- Never commit on main; branch + PR (suggested: `feat/standalone`). The
-  repo-owner's git hooks evaluate the SESSION cwd's branch — if a hook blocks
-  an operation targeting another repo, move THAT cwd repo to a temp branch,
-  never bypass the hook (see `../vbmmsw` memory: hooks-git-cwd-bug).
+- Never commit on main; branch + PR (suggested branch name: `standalone` —
+  deliberately WITHOUT a slash: Claude Code worktrees map `feat/x` to a
+  `feat+x` directory, and a `+` anywhere in the path hangs Vitest browser
+  mode silently and forever — measured; see
+  `../vbmmsw/docs/knowledge/rutas-con-mas-browser-mode.md`. If you do use a
+  worktree, verify its directory name has no `+`, `%` or spaces BEFORE
+  running any test). The repo-owner's git hooks evaluate the SESSION cwd's
+  branch — if a hook blocks an operation targeting another repo, move THAT
+  cwd repo to a temp branch, never bypass the hook (see `../vbmmsw` memory:
+  hooks-git-cwd-bug).
 - Timing constants, mechanisms and public API are NOT up for redesign here —
   this is a move + translation, not a refactor. Any real defect found goes to
   the review loop, not silent fixing.
