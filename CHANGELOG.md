@@ -2,7 +2,8 @@
 
 ## 0.1.0 — 2026-08-14
 
-Primera versión: `setupNetwork`, `mount`, descriptores (`get`, `post`, `put`,
-`patch`, `del`, `query`, `request`) y los matchers `toHaveBeenRequested`,
-`toHaveBeenRequestedTimes`, `toHaveBeenIntercepted`, `toHaveRespondedWith` y
-`toHaveNoUnhandledRequests`, más `network.log()` y `network.idle()`.
+First release: `setupNetwork`, `mount`, request descriptors (`get`, `post`,
+`put`, `patch`, `del`, `query`, `request`) and the matchers
+`toHaveBeenRequested`, `toHaveBeenRequestedTimes`, `toHaveBeenIntercepted`,
+`toHaveRespondedWith` and `toHaveNoUnhandledRequests`, plus `network.log()`
+and `network.idle()`.

@@ -1,7 +1,7 @@
 {
   "name": "@yabbadabbadev/pepito",
   "version": "0.1.0",
-  "description": "Utilidades de test de red para Vitest browser mode: montaje de la aplicación y matchers sobre el tráfico observado por MSW",
+  "description": "Network test utilities for Vitest browser mode: application mounting and matchers over the traffic observed by MSW",
   "type": "module",
   "license": "MIT",
   "repository": {

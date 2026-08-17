@@ -1,32 +1,33 @@
 # pepito
 
-Utilidades de test de red para Vitest browser mode: monta la aplicación con
-`mount` y asierta sobre el tráfico observado por MSW con matchers de
-`expect`. No abstrae MSW — los handlers se declaran con `http.get(...)` de
-siempre — solo aporta el arranque, el registro del tráfico y los matchers
-para consultarlo.
+Network test utilities for Vitest browser mode: mount the application with
+`mount` and assert on the traffic observed by MSW with `expect` matchers. It
+doesn't abstract MSW — handlers are still declared with the usual
+`http.get(...)` — it only provides the startup, the traffic registry and the
+matchers to query it.
 
-Se publica en npm como `@yabbadabbadev/pepito`; `pepito` sigue siendo el
-code-name del proyecto y el nombre de este directorio. Ver `CONTRIBUTING.md`
-para ejecutar los tests y publicar una versión, y `ROADMAP.md` para lo que
-queda fuera de esta versión.
+Published on npm as `@yabbadabbadev/pepito`; `pepito` remains the project's
+code-name and this directory's name. See `CONTRIBUTING.md` to run the tests
+and publish a version, and `ROADMAP.md` for what's out of scope for this
+version.
 
-## 1. Instalar y arrancar
+## 1. Install and start
 
-`react`, `react-dom`, `vitest`, `msw` y `vitest-browser-react` son
-**peerDependencies**: instálalas si tu proyecto no las trae ya.
+`react`, `react-dom`, `vitest`, `msw` and `vitest-browser-react` are
+**peerDependencies**: install them if your project doesn't already have
+them.
 
 ```bash
 npm i -D @yabbadabbadev/pepito msw vitest-browser-react
 npx msw init public --save
 ```
 
-`npx msw init public --save` genera el service worker que MSW necesita en
-browser mode (`public/mockServiceWorker.js`); es un one-off, no un paso del
-día a día — se repite solo al subir de versión de MSW.
+`npx msw init public --save` generates the service worker MSW needs in
+browser mode (`public/mockServiceWorker.js`); it's a one-off, not a
+day-to-day step — it's only repeated when upgrading MSW's version.
 
-Llama a `setupNetwork` una vez, en un fichero de `setupFiles` de
-`vitest.config` — nunca dentro de un test:
+Call `setupNetwork` once, in a `setupFiles` file of `vitest.config` — never
+inside a test:
 
 ```ts
 // vitest.setup.ts
@@ -46,9 +47,10 @@ export default defineConfig({
 })
 ```
 
-El segundo argumento de `setupNetwork` pasa tal cual a `worker.start()`, sin
-envoltorio propio — por ejemplo, para que una petición sin handler tire el
-test en vez de solo avisar por consola:
+`setupNetwork`'s second argument passes straight through to
+`worker.start()`, with no wrapper of its own — for example, to make a
+request with no handler fail the test instead of just warning on the
+console:
 
 ```ts
 // vitest.setup.ts
@@ -58,19 +60,19 @@ import { handlers } from './handlers'
 setupNetwork(handlers, { onUnhandledRequest: 'error' })
 ```
 
-Importar cualquier cosa de `pepito` —aquí, `setupNetwork`— ya trae consigo
-los matchers de red como tipos de `expect`: no hay un registro de tipos
-aparte. Si tu `tsconfig` de test no incluye el fichero de setup, `tsc` no verá
-la augmentación y `expect(...).toHaveBeenRequested()` dará `TS2339` aunque el
-test pase en tiempo de ejecución.
+Importing anything from `pepito` — here, `setupNetwork` — already brings the
+network matchers along as `expect` types: there's no separate type
+registration. If your test `tsconfig` doesn't include the setup file, `tsc`
+won't see the augmentation and `expect(...).toHaveBeenRequested()` will
+raise `TS2339` even though the test passes at runtime.
 
-## 2. Montar la aplicación
+## 2. Mount the application
 
-`mount` monta con `vitest-browser-react` y devuelve su `screen` sin envolver.
-Requiere que `setupNetwork` haya corrido antes (sección 1), **también para un
-test sin red**: el acoplamiento es deliberado — `mount` instala la limpieza de
-URL y almacenamiento entre tests además de la red — y si falta, falla en el
-momento con la instrucción de arreglo.
+`mount` mounts with `vitest-browser-react` and returns its `screen`
+unwrapped. It requires `setupNetwork` to have run first (section 1), **even
+for a test with no network**: the coupling is deliberate — `mount` also
+installs URL and storage cleanup between tests, not just the network — and
+if it's missing, it fails immediately with a fix instruction.
 
 ```tsx
 import { http, HttpResponse } from 'msw'
@@ -78,9 +80,9 @@ import { mount, get } from '@yabbadabbadev/pepito'
 import { App } from '../src/App'
 import { ProductListMother } from '../test/mothers/product-list-mother'
 
-test('la página de catálogo pinta el filtro de la URL', async () => {
+test('the catalog page renders the URL filter', async () => {
   const screen = await mount(<App />, {
-    path: '/products?filtro=pan',
+    path: '/products?filter=bread',
     network: [
       http.get('/api/products', () =>
         HttpResponse.json(ProductListMother.catalog()),
@@ -88,44 +90,44 @@ test('la página de catálogo pinta el filtro de la URL', async () => {
     ],
   })
 
-  await expect.element(screen.getByText('filtro: pan')).toBeVisible()
+  await expect.element(screen.getByText('filter: bread')).toBeVisible()
   await expect(get('/api/products')).toHaveBeenRequested()
 })
 ```
 
-`path` es una URI **completa** same-origin que empieza por `/` — query y hash
-incluidos — porque el router de tu aplicación (`BrowserRouter` o el que sea)
-la lee de la URL real del documento, no de un `MemoryRouter`. Un origen
-distinto no es un `path` válido: se mockea en los `handlers`, no en el
-montaje — ver la sección 7.
+`path` is a **complete** same-origin URI starting with `/` — query and hash
+included — because your application's router (`BrowserRouter` or whichever)
+reads it from the document's real URL, not from a `MemoryRouter`. A
+different origin isn't a valid `path`: it's mocked in the `handlers`, not in
+the mount — see section 7.
 
-`network` son handlers de MSW propios de este test: entran con `worker.use()`
-antes del render, así que ganan a los de la suite para la misma ruta, y
-`setupNetwork()` los deshace después en su `afterEach`. Ninguna de las dos
-opciones es obligatoria — `mount(<App />)` a secas monta y punto:
+`network` are this test's own MSW handlers: they're installed with
+`worker.use()` before render, so they win over the suite's for the same
+route, and `setupNetwork()` undoes them afterwards in its `afterEach`.
+Neither option is required — `mount(<App />)` on its own just mounts:
 
 ```tsx
 import { mount } from '@yabbadabbadev/pepito'
 import { App } from '../src/App'
 
-test('monta sin path ni network propios', async () => {
+test('mounts with no path or network of its own', async () => {
   const screen = await mount(<App />)
 
-  await expect.element(screen.getByText('Catálogo de productos')).toBeVisible()
+  await expect.element(screen.getByText('Product catalog')).toBeVisible()
 })
 ```
 
-`path` puede llevar query y hash a la vez, porque los dos atraviesan el
-router igual que el resto de la URI:
+`path` can carry query and hash together, because both flow through the
+router the same as the rest of the URI:
 
 ```tsx
-const screen = await mount(<App />, { path: '/products?filtro=pan#detalle' })
+const screen = await mount(<App />, { path: '/products?filter=bread#detail' })
 
-await expect.element(screen.getByText('filtro: pan')).toBeVisible()
-await expect.element(screen.getByText('hash: #detalle')).toBeVisible()
+await expect.element(screen.getByText('filter: bread')).toBeVisible()
+await expect.element(screen.getByText('hash: #detail')).toBeVisible()
 ```
 
-## 3. Asertar una petición
+## 3. Assert a request
 
 ```ts
 import { get, post } from '@yabbadabbadev/pepito'
@@ -135,100 +137,101 @@ await expect(get('/api/products')).toHaveBeenRequestedTimes(2)
 await expect(post('/api/products')).not.toHaveBeenRequested()
 ```
 
-`get`, `post`, `put`, `patch`, `del` y `query` describen la petición esperada
-— los seis son atajos de `request(método, path)` con el método ya fijado.
-Para cualquier otro método usa `request(método, path)` directamente: es la
-escotilla que cubre incluso los que MSW 2.15 todavía no expone como helper de
-handler:
+`get`, `post`, `put`, `patch`, `del` and `query` describe the expected
+request — all six are shortcuts for `request(method, path)` with the method
+already fixed. For any other method use `request(method, path)` directly:
+it's the escape hatch that covers even the ones MSW 2.15 still doesn't
+expose as a handler helper:
 
 ```ts
 import { del, patch, put, query, request } from '@yabbadabbadev/pepito'
 
 await expect(
-  put('/api/products/1', { body: { product_name: 'Leche entera' } }),
+  put('/api/products/1', { body: { product_name: 'Whole milk' } }),
 ).toHaveBeenRequested()
 await expect(
   patch('/api/products/1', { body: { stock: 3 } }),
 ).toHaveBeenRequested()
 await expect(del('/api/products/1')).toHaveBeenRequested()
 await expect(
-  query('/api/products', { searchParams: { filtro: 'pan' } }),
+  query('/api/products', { searchParams: { filter: 'bread' } }),
 ).toHaveBeenRequested()
 await expect(request('OPTIONS', '/api/products')).toHaveBeenRequested()
 ```
 
-Body y `searchParams` casan por **subconjunto**:
+Body and `searchParams` match by **subset**:
 
 ```ts
 import { get, post } from '@yabbadabbadev/pepito'
 
 await expect(
-  get('/api/products', { searchParams: { filtro: 'pan' } }),
+  get('/api/products', { searchParams: { filter: 'bread' } }),
 ).toHaveBeenRequested()
 await expect(
-  post('/api/products', { body: { product_name: 'Leche entera' } }),
+  post('/api/products', { body: { product_name: 'Whole milk' } }),
 ).toHaveBeenRequested()
 ```
 
-`post('/api/products', { body: { product_name: 'Leche entera' } })` casa
-aunque la petición real lleve además `id`. Pásale `{ exact: true }` cuando
-necesites igualdad estricta de todo el objeto, no solo de las claves que
-listes en `body`:
+`post('/api/products', { body: { product_name: 'Whole milk' } })` matches
+even if the real request also carries `id`. Pass `{ exact: true }` when you
+need strict equality of the whole object, not just the keys you list in
+`body`:
 
 ```ts
 await expect(
   post('/api/products', {
-    body: { product_name: 'Leche entera' },
+    body: { product_name: 'Whole milk' },
     exact: true,
   }),
 ).toHaveBeenRequested()
 ```
 
-Una clave de `searchParams` repetida en la URL real (`?tag=a&tag=b`) se
-colapsa a su último valor antes de comparar — el matcher no puede distinguir
-esa petición de una con la clave una sola vez.
+A `searchParams` key repeated in the real URL (`?tag=a&tag=b`) collapses to
+its last value before comparing — the matcher can't tell that request apart
+from one where the key appears only once.
 
-Los matchers reintentan porque una petición es un efecto posterior a la
-interacción, igual que `expect.element` — no hace falta envolverlos en un
-`waitFor`. `.not.toHaveBeenRequested()` y `toHaveBeenRequestedTimes` son la
-excepción: antes de decidir esperan a que la red se quede en calma, para no
-confundir una petición que aún no ha llegado con una que nunca se hizo.
+The matchers retry because a request is an effect that follows the
+interaction, just like `expect.element` — there's no need to wrap them in a
+`waitFor`. `.not.toHaveBeenRequested()` and `toHaveBeenRequestedTimes` are
+the exception: before deciding, they wait for the network to settle, so as
+not to confuse a request that hasn't arrived yet with one that never
+happened.
 
-## 4. Interceptada o escapada
+## 4. Intercepted or escaped
 
-`toHaveBeenRequested` y `toHaveBeenIntercepted` afirman cosas distintas:
+`toHaveBeenRequested` and `toHaveBeenIntercepted` assert different things:
 
-| Matcher                 | Qué afirma                           |
-| ----------------------- | ------------------------------------ |
-| `toHaveBeenRequested`   | La aplicación hizo la petición       |
-| `toHaveBeenIntercepted` | Un handler tuyo produjo la respuesta |
+| Matcher                 | What it asserts                            |
+| ----------------------- | ------------------------------------------ |
+| `toHaveBeenRequested`   | The application made the request           |
+| `toHaveBeenIntercepted` | One of your handlers produced the response |
 
-Un handler con `passthrough()` cumple el primero y no el segundo: la
-respuesta vino de la red real, no de tu mock.
+A handler with `passthrough()` satisfies the first and not the second: the
+response came from the real network, not from your mock.
 
 ```ts
 import { http, passthrough } from 'msw'
 import { get } from '@yabbadabbadev/pepito'
 
-// handler: http.get('/api/legado', () => passthrough())
+// handler: http.get('/api/legacy', () => passthrough())
 
-await fetch('/api/legado')
+await fetch('/api/legacy')
 
-await expect(get('/api/legado')).toHaveBeenRequested() // pasa
-await expect(get('/api/legado')).toHaveBeenIntercepted() // falla
+await expect(get('/api/legacy')).toHaveBeenRequested() // passes
+await expect(get('/api/legacy')).toHaveBeenIntercepted() // fails
 ```
 
-Para pillar lo que ni siquiera tiene handler, el guardarraíl de suite:
+To catch what doesn't even have a handler, the suite-wide guardrail:
 
 ```ts
 await expect.network().toHaveNoUnhandledRequests()
 ```
 
-`toHaveNoUnhandledRequests` cuelga de `expect.network()`, no de un descriptor
-de petición, porque no describe una petición concreta sino todo el tráfico
-observado.
+`toHaveNoUnhandledRequests` hangs off `expect.network()`, not off a request
+descriptor, because it doesn't describe one specific request but all the
+observed traffic.
 
-## 5. Qué respondió el mock
+## 5. What the mock responded
 
 ```ts
 import { get } from '@yabbadabbadev/pepito'
@@ -241,9 +244,9 @@ await expect(get('/api/products')).toHaveRespondedWith({
 })
 ```
 
-El número a secas es el atajo de `{ status }`. El `body`, si se da, casa por
-subconjunto igual que en los descriptores de petición — `{ exact: true }`
-para igualdad estricta:
+A bare number is the shorthand for `{ status }`. The `body`, if given,
+matches by subset the same way as in request descriptors — `{ exact: true }`
+for strict equality:
 
 ```ts
 import { get } from '@yabbadabbadev/pepito'
@@ -256,25 +259,25 @@ await expect(get('/api/products')).toHaveRespondedWith({
 })
 ```
 
-`toHaveRespondedWith` exige además que la petición haya sido interceptada: una
-respuesta real vía `passthrough()` nunca cuenta, aunque el status case por
-casualidad.
+`toHaveRespondedWith` also requires the request to have been intercepted: a
+real response via `passthrough()` never counts, even if the status happens
+to match.
 
-## 6. Depurar cuando falla
+## 6. Debug a failure
 
-Los mensajes de fallo llevan el tráfico completo observado y un diff en color
-(`this.utils` de Vitest, el mismo que usan los matchers nativos — nada de
-dependencias nuevas):
+Failure messages carry the full observed traffic and a colored diff
+(Vitest's `this.utils`, the same one native matchers use — no new
+dependencies):
 
 ```
 expect(received).toHaveBeenRequested(expected)
 
-Esperaba: Object {
+Expected: Object {
   "body": undefined,
   "method": "GET",
   "path": "/api/products",
   "searchParams": Object {
-    "filtro": "chocolate",
+    "filter": "chocolate",
   },
 }
 
@@ -284,38 +287,38 @@ Esperaba: Object {
   {
     "body": undefined,
     "searchParams": {
--     "filtro": "chocolate",
-+     "filtro": "pan",
+-     "filter": "chocolate",
++     "filter": "bread",
     },
   }
 
-Tráfico observado:
-  GET /api/products?filtro=pan → 200 [matched/mocked]
+Observed traffic:
+  GET /api/products?filter=bread → 200 [matched/mocked]
 ```
 
-(salida real, capturada sin color; en tu terminal `- Expected`/`+ Received`
-llegan en verde y rojo)
+(real output, captured without color; in your terminal `- Expected`/`+
+Received` arrive in green and red)
 
-Para mirar el tráfico sin que nada falle, en medio de un test que estás
-depurando:
+To look at the traffic without anything failing, in the middle of a test
+you're debugging:
 
 ```ts
 import { network } from '@yabbadabbadev/pepito'
 
 await fetch('/api/products')
-await network.log() // vuelca method, path, body y status por consola
+await network.log() // dumps method, path, body and status to the console
 ```
 
-Si el mensaje de fallo no explica lo que esperabas, es un defecto del
-matcher, no algo que compensar a mano: los mensajes de fallo son parte del
-producto y se testean como cualquier otra salida (ver `CONTRIBUTING.md`).
+If a failure message doesn't explain what you expected, that's a matcher
+defect, not something to work around by hand: failure messages are part of
+the product and are tested like any other output (see `CONTRIBUTING.md`).
 
-## 7. Recetas
+## 7. Recipes
 
-**Respuestas distintas en llamadas sucesivas.** No hace falta ninguna API de
-`pepito` para esto: es MSW puro, con handlers encadenados. El primero que casa
-gana, y si lleva `{ once: true }` se desactiva después de esa primera vez, así
-que la petición cae al siguiente handler de la lista:
+**Different responses across successive calls.** No `pepito` API is needed
+for this: it's plain MSW, with chained handlers. The first one that matches
+wins, and if it carries `{ once: true }` it deactivates after that first
+time, so the request falls through to the next handler in the list:
 
 ```tsx
 import { http, HttpResponse } from 'msw'
@@ -323,7 +326,7 @@ import { get, mount } from '@yabbadabbadev/pepito'
 import { App } from '../src/App'
 import { ProductListMother } from '../test/mothers/product-list-mother'
 
-test('la segunda visita ya ve el catálogo cacheado', async () => {
+test('the second visit already sees the cached catalog', async () => {
   await mount(<App />, {
     network: [
       http.get(
@@ -337,9 +340,9 @@ test('la segunda visita ya ve el catálogo cacheado', async () => {
     ],
   })
 
-  await fetch('/api/products') // 1ª: el handler once responde y se agota
-  await fetch('/api/products') // 2ª: cae al handler de abajo
-  await fetch('/api/products') // 3ª: el de abajo no es once, sigue respondiendo
+  await fetch('/api/products') // 1st: the once handler responds and is spent
+  await fetch('/api/products') // 2nd: falls through to the handler below
+  await fetch('/api/products') // 3rd: the one below isn't once, keeps responding
 
   await expect(get('/api/products')).toHaveBeenRequestedTimes(3)
   await expect(get('/api/products')).toHaveRespondedWith({
@@ -353,25 +356,25 @@ test('la segunda visita ya ve el catálogo cacheado', async () => {
 })
 ```
 
-Verificado en este repo: primera llamada → catálogo vacío, segunda y tercera →
-catálogo completo (X→Y→Y). `setupNetwork()` deshace los handlers de test en su
-`afterEach` con `worker.resetHandlers()`, así que cada test siguiente vuelve a
-ver el `once` fresco, sin agotar entre tests.
+Verified in this repo: first call → empty catalog, second and third → full
+catalog (X→Y→Y). `setupNetwork()` undoes the test handlers in its
+`afterEach` with `worker.resetHandlers()`, so every following test sees a
+fresh `once` again, with no exhaustion carrying over between tests.
 
-Cada `toHaveRespondedWith` de arriba encuentra su propia entrada del registro
-— uno casa con la respuesta vacía, el otro con el catálogo — sin importar en
-qué orden se escriban los `expect`. Lo que `pepito` no tiene todavía es un
-matcher que afirme el ORDEN entre dos peticiones idénticas (por ejemplo, "la
-vacía antes que el catálogo"): queda en `ROADMAP.md`, porque el registro ya es
-cronológico y solo falta exponerlo.
+Each `toHaveRespondedWith` above finds its own entry in the registry — one
+matches the empty response, the other the catalog — regardless of the order
+the `expect`s are written in. What `pepito` doesn't have yet is a matcher
+that asserts the ORDER between two identical requests (for example, "the
+empty one before the catalog"): it's in `ROADMAP.md`, because the registry
+is already chronological and only needs exposing.
 
-Para secuencias más raras que un `once` no expresa bien (tres respuestas
-distintas, o una condición que no es "la primera vez"), el closure con
-contador declarado dentro del propio test es la alternativa — sin tocar
+For sequences odder than `once` can express well (three different
+responses, or a condition that isn't "the first time"), a counter closure
+declared inside the test itself is the alternative — with no changes to
 `pepito`:
 
 ```ts
-test('tres respuestas distintas para la misma ruta', async () => {
+test('three different responses for the same route', async () => {
   let callCount = 0
 
   await mount(<App />, {
@@ -394,26 +397,25 @@ test('tres respuestas distintas para la misma ruta', async () => {
 })
 ```
 
-**Sembrar `localStorage`/cookies antes de montar.** El almacenamiento del
-navegador es real; no hace falta una opción de `mount` para esto, un
-`setItem` normal antes del `await mount(...)` basta:
+**Seeding `localStorage`/cookies before mounting.** The browser's storage is
+real; no `mount` option is needed for this, a plain `setItem` before `await
+mount(...)` is enough:
 
 ```ts
-test('el catálogo respeta el filtro guardado', async () => {
-  localStorage.setItem('filtroFavorito', 'pan')
-  document.cookie = 'sesion=abc'
+test('the catalog respects the saved filter', async () => {
+  localStorage.setItem('favoriteFilter', 'bread')
+  document.cookie = 'session=abc'
 
   const screen = await mount(<App />)
 
-  await expect.element(screen.getByText('filtro: pan')).toBeVisible()
+  await expect.element(screen.getByText('filter: bread')).toBeVisible()
 })
 ```
 
-**Fixtures con Mothers.** Los payloads de las respuestas mockeadas siguen el
-patrón Mother/Builder de la casa — cada Mother modela la forma de la
-respuesta de un endpoint, con factorías con nombre para sus variantes; nada
-de literales sueltos ni `structuredClone` con mutación, tampoco en los
-ejemplos que se copian de aquí:
+**Fixtures with Mothers.** Mocked response payloads follow the house's
+Mother/Builder pattern — each Mother models the shape of one endpoint's
+response, with named factories for its variants; no loose literals and no
+`structuredClone` with mutation, not even in examples copied from here:
 
 ```ts
 // test/mothers/product-list-mother.ts
@@ -422,8 +424,8 @@ interface ProductResponse {
   product_name: string
 }
 
-const milk = { id: 1, product_name: 'Leche entera' } satisfies ProductResponse
-const bread = { id: 2, product_name: 'Pan de pueblo' } satisfies ProductResponse
+const milk = { id: 1, product_name: 'Whole milk' } satisfies ProductResponse
+const bread = { id: 2, product_name: 'Country bread' } satisfies ProductResponse
 
 export const ProductListMother = {
   catalog: (): ProductResponse[] => [milk, bread],
@@ -435,74 +437,75 @@ export const ProductListMother = {
 http.get('/api/products', () => HttpResponse.json(ProductListMother.catalog()))
 ```
 
-Un payload incidental que no es una entidad (`{ ok: true }`) no necesita
-Mother. `pepito` no exporta infraestructura de fixtures — los Mothers son del
-dominio de cada proyecto.
+An incidental payload that isn't an entity (`{ ok: true }`) doesn't need a
+Mother. `pepito` doesn't export fixture infrastructure — Mothers belong to
+each project's own domain.
 
-**El host del API va en el handler, no en la configuración.** No hay
-`defaultHost`: el service worker intercepta cross-origin igual que
-same-origin, así que el host es un detalle de la URL del handler.
+**The API's host goes in the handler, not in the configuration.** There's no
+`defaultHost`: the service worker intercepts cross-origin the same as
+same-origin, so the host is a detail of the handler's URL.
 
 ```ts
-http.get('https://api.miempresa.com/products', () =>
+http.get('https://api.example.com/products', () =>
   HttpResponse.json(ProductListMother.catalog()),
 )
-// o con comodín:
+// or with a wildcard:
 http.get('*/products', () => HttpResponse.json(ProductListMother.catalog()))
 ```
 
-`mount({ path })`, en cambio, sí exige same-origin — un origen distinto ahí
-lanza con instrucción, porque el `path` mueve la URL del documento de test,
-no la petición que quieres mockear.
+`mount({ path })`, by contrast, does require same-origin — a different
+origin there throws with an instruction, because `path` moves the test
+document's URL, not the request you want to mock.
 
-**Esperar la calma de la red antes de capturar.** El estabilizador nativo de
-`toMatchScreenshot` espera a que el frame deje de cambiar, pero un
-`<p>Cargando…</p>` estático también es una captura estable: sin esperar a la
-red, la baseline es la pantalla de carga, no el contenido real. Medido en
-`docs/knowledge/regresion-visual-browser-mode.md`: 0 fallos en 17 ejecuciones
-locales + 3 en CI esperando la calma así, con baselines byte-idénticas a las
-que ancla `expect.element` a un texto concreto. `network.idle()` espera con
-el mismo mecanismo que los matchers de red, sin asertar nada:
+**Waiting for the network to settle before capturing.**
+`toMatchScreenshot`'s native stabilizer waits for the frame to stop
+changing, but a static `<p>Loading…</p>` is also a stable capture: without
+waiting for the network, the baseline is the loading screen, not the real
+content. Measured in `docs/knowledge/regresion-visual-browser-mode.md`: 0
+failures across 17 local runs + 3 in CI waiting for calm this way, with
+baselines byte-identical to the ones anchored by `expect.element` to a
+specific text. `network.idle()` waits with the same mechanism the network
+matchers use, without asserting anything:
 
 ```tsx
 import { mount, network } from '@yabbadabbadev/pepito'
 import { App } from '../src/App'
 
-test('el catálogo no cambia visualmente', async () => {
+test('the catalog does not change visually', async () => {
   const screen = await mount(<App />)
 
   await network.idle()
 
-  await expect.element(screen.getByRole('main')).toMatchScreenshot('catalogo')
+  await expect.element(screen.getByRole('main')).toMatchScreenshot('catalog')
 })
 ```
 
-## 8. Chuleta
+## 8. Cheat sheet
 
 ```ts
-request('QUERY', '/api/products') // cualquier método, incluidos los que no tienen atajo
-get('/api/products', { searchParams: { filtro: 'pan' } }) // subconjunto de searchParams
-post('/api/products', { body: { product_name: 'Leche' } }) // subconjunto de body
-put('/api/products/1', { body: { stock: 3 }, exact: true }) // igualdad estricta
+request('QUERY', '/api/products') // any method, including ones with no shortcut
+get('/api/products', { searchParams: { filter: 'bread' } }) // subset of searchParams
+post('/api/products', { body: { product_name: 'Whole milk' } }) // subset of body
+put('/api/products/1', { body: { stock: 3 }, exact: true }) // strict equality
 patch('/api/products/1', { body: { stock: 3 } })
 del('/api/products/1')
-query('/api/products', { searchParams: { filtro: 'pan' } })
+query('/api/products', { searchParams: { filter: 'bread' } })
 
-await expect(get('/api/products')).toHaveBeenRequested() // la app hizo la petición
-await expect(get('/api/products')).not.toHaveBeenRequested() // espera la calma antes
-await expect(get('/api/products')).toHaveBeenRequestedTimes(2) // conteo exacto, red en calma
-await expect(get('/api/products')).toHaveBeenIntercepted() // un handler propio respondió
-await expect(get('/api/products')).toHaveRespondedWith(500) // atajo de { status: 500 }
+await expect(get('/api/products')).toHaveBeenRequested() // the app made the request
+await expect(get('/api/products')).not.toHaveBeenRequested() // waits for calm first
+await expect(get('/api/products')).toHaveBeenRequestedTimes(2) // exact count, network settled
+await expect(get('/api/products')).toHaveBeenIntercepted() // one of your handlers responded
+await expect(get('/api/products')).toHaveRespondedWith(500) // shorthand for { status: 500 }
 await expect(get('/api/products')).toHaveRespondedWith({
   status: 200,
-  body: { total: 2 }, // subconjunto
+  body: { total: 2 }, // subset
 })
 await expect(get('/api/products')).toHaveRespondedWith({
   status: 200,
   body: { total: 2 },
-  exact: true, // igualdad estricta
+  exact: true, // strict equality
 })
-await expect.network().toHaveNoUnhandledRequests() // guardarraíl: nada sin handler
-await network.log() // vuelca el tráfico observado, sin asertar
-await network.idle() // espera la calma, sin asertar — antes de capturar en regresión visual
+await expect.network().toHaveNoUnhandledRequests() // guardrail: nothing without a handler
+await network.log() // dumps the observed traffic, without asserting
+await network.idle() // waits for calm, without asserting — before capturing in visual regression
 ```
