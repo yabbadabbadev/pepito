@@ -9,11 +9,8 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
-# id-token: write is what allows --provenance: without it, npm publish can't
-# request the OIDC JWT used to build the attestation.
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   publish:
@@ -63,11 +60,14 @@ jobs:
           fi
 
       - name: Publish to npm
-        # --provenance generates a verifiable SLSA attestation on the
-        # package's npmjs.com page, linking the published tarball to this
-        # workflow, this commit and the runner that built it. No --access:
-        # public access is already set in package.json's publishConfig.
-        run: npm publish --provenance
+        # No --provenance while this repository is private: the registry
+        # rejects provenance from private sources (measured on the v0.1.0
+        # publish attempt: E422 "Only public source repositories are
+        # supported"). Re-enable it, plus the id-token: write permission it
+        # needs, when the repo goes public — tracked in the ROADMAP. No
+        # --access: public access is already set in package.json's
+        # publishConfig.
+        run: npm publish
         env:
           # NPM_TOKEN is a granular npm token (Read and write, automation
           # type, with publish permission on the package or the
