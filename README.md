@@ -461,8 +461,9 @@ document's URL, not the request you want to mock.
 `toMatchScreenshot`'s native stabilizer waits for the frame to stop
 changing, but a static `<p>Loading…</p>` is also a stable capture: without
 waiting for the network, the baseline is the loading screen, not the real
-content. Measured in `docs/knowledge/regresion-visual-browser-mode.md`: 0
-failures across 17 local runs + 3 in CI waiting for calm this way, with
+content. Measured in the evaluation repo's
+`docs/knowledge/regresion-visual-browser-mode.md`: 0 failures across 17
+local runs + 3 in CI waiting for calm this way, with
 baselines byte-identical to the ones anchored by `expect.element` to a
 specific text. `network.idle()` waits with the same mechanism the network
 matchers use, without asserting anything:

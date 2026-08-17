@@ -117,7 +117,7 @@ export async function snapshotAfterIdle(): Promise<ResolvedRequest[]> {
 //
 // This does NOT close the blind window: no bounded wait can, that's the
 // preregistered position of docs/knowledge/quiescencia-red-msw.md. It only
-// narrows the practical failure margin from one interval to two — reasoned
+// narrows the practical failure bound from one interval to two — reasoned
 // from how `waitForNetworkIdle` works, not measured: this harness is too
 // fast to reproduce the contended CI that motivates the change. The
 // DETERMINISM tests in matchers-quiescence.test.ts measure something real

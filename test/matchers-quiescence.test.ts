@@ -8,7 +8,7 @@ test('not.toHaveBeenRequested passes when there really was no request', async ()
   await expect(get('/api/products')).not.toHaveBeenRequested()
 })
 
-test('DETERMINISM: not waits for calm and catches the slow request in flight', async () => {
+test('DETERMINISM: `.not` waits for calm and catches the slow request in flight', async () => {
   worker.use(
     http.get('/api/slow', async () => {
       await delay(120)

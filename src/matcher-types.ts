@@ -50,7 +50,7 @@ interface NetworkMatchers<ReturnType = unknown> {
   toHaveBeenRequestedTimes(count: number): Promise<ReturnType>
 
   /**
-   * Checks that one of the suite's own handlers produced the response, not
+   * Checks that one of your own handlers produced the response, not
    * just that the request matched its route: a handler with `passthrough()`
    * satisfies `toHaveBeenRequested` but not this matcher, because the
    * response came from the real network.

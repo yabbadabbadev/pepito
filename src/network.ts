@@ -48,19 +48,18 @@ export const network = {
    * absence of future traffic: the same practical blind window remains as
    * for the rest of the mechanism — a request fired in the same tick as the
    * call, before crossing the real round trip to the service worker (1–6 ms
-   * measured in
-   * `docs/knowledge/quiescencia-red-msw.md`), may not be in the registry
-   * yet when `network.idle()` resolves.
+   * measured; see `.claude/docs/references/measured-foundations.md`), may
+   * not be in the registry yet when `network.idle()` resolves.
    *
    * Meant for visual regression: capturing right after mounting, with a
    * slow network in the mix, produces a STABLE but wrong baseline — the
    * native stabilizer of `toMatchScreenshot` doesn't catch it because
    * "Loading…" is also a capture that stops changing between frames
-   * (`docs/knowledge/regresion-visual-browser-mode.md`: 0 failures across 17
-   * local runs + 3 in CI waiting for calm this way). Before this, the only
-   * public way to wait for calm on its own was to divert
-   * `expect.network().toHaveNoUnhandledRequests()` from its actual purpose
-   * (detecting traffic without a handler). It works just as well as a
+   * (measured: 0 failures across 17 local runs + 3 in CI waiting for calm
+   * this way — see `.claude/docs/references/measured-foundations.md`).
+   * Before this, the only public way to wait for calm on its own was to
+   * divert `expect.network().toHaveNoUnhandledRequests()` from its actual
+   * purpose (detecting traffic without a handler). It works just as well as a
    * generic "wait for the network to settle", without asserting anything.
    *
    * @example

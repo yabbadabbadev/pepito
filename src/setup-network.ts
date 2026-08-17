@@ -14,8 +14,7 @@ import { resetTraffic } from './traffic-registry'
  * Starts the MSW worker and hooks up the traffic registry, leaving the
  * between-test cleanup installed in `afterEach`: registry, hot handlers,
  * document URL and origin storage all return to their pre-test state
- * (docs/knowledge/aislamiento-tests.md,
- * docs/knowledge/url-navegacion-browser-mode.md).
+ * (measured — see `.claude/docs/references/measured-foundations.md`).
  *
  * Called once per test file, typically from a `setupFiles` entry in
  * `vitest.config`, never from inside a test.
@@ -24,8 +23,8 @@ import { resetTraffic } from './traffic-registry'
  * (or with `domain`) can't be enumerated from `document.cookie`, so it
  * survives between tests — see `clearOriginStorage` in storage-cleanup.ts.
  * A cookie without an explicit `path` does get cleared, including one set
- * while `mount` was simulating being on a nested route
- * (docs/knowledge/url-navegacion-browser-mode.md).
+ * while `mount` was simulating being on a nested route (measured — see
+ * `.claude/docs/references/measured-foundations.md`).
  *
  * @param handlers - Initial MSW handlers, the same ones `setupWorker` would take.
  * @param startOptions - Passed through to `worker.start()` as-is; no wrapper of its own.

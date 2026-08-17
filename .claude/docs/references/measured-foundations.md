@@ -19,6 +19,11 @@ that pins the behaviour.
 or **reasoned** (derived from the mechanism, never observed in this harness).
 The label is part of the finding: do not promote a reasoned item to measured
 without taking the measurement, and do not drop the numbers when editing.
+Reading counts as measuring when the artifact read is the exact one in play
+— the installed `.d.ts` of the dependency version this package runs
+against, say — because that reading observes the real thing, not an
+inference about it; reading unrelated source to guess at behaviour that was
+never run or reproduced here stays reasoned.
 
 Measured on `msw@2.15.0`, `vitest@4.1.10`, Chromium headless via Playwright,
 in local. Millisecond figures are indicative of one machine; the orderings

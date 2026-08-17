@@ -1,8 +1,9 @@
 /**
  * Traffic entry as it lives in the registry while the test runs: `body` and
- * `responseBody` are promises because they can only be read once
- * (docs/knowledge/msw-browser-mode.md) and are stored without awaiting, so
- * as not to block the `request:start` listener that opens them.
+ * `responseBody` are promises because they can only be read once (measured
+ * — see `.claude/docs/references/measured-foundations.md`) and are stored
+ * without awaiting, so as not to block the `request:start` listener that
+ * opens them.
  */
 export interface ObservedRequest {
   requestId: string
@@ -38,7 +39,8 @@ const pending = new Set<string>()
 
 /**
  * Opens a traffic entry with what can only be read at `request:start`
- * (docs/knowledge/msw-browser-mode.md) and marks it in flight.
+ * (measured — see `.claude/docs/references/measured-foundations.md`) and
+ * marks it in flight.
  * `watchNetwork` (msw-events.ts) is the only caller.
  */
 export function recordRequestStart(
@@ -150,10 +152,11 @@ export const QUIESCENCE_TIMEOUT_MS = 4000
  * in the same tick as the call hasn't yet crossed the real round trip to
  * the service worker that registers its `request:start`, so this function
  * reads the counter at zero by construction, not by actual absence (see
- * docs/knowledge/quiescencia-red-msw.md). Whoever needs to assert an
- * absence or count with precision must go through `snapshotAfterIdle` in
- * `pepito/src/matchers.ts`, which closes that window with a two-observation
- * stability condition; calling this function directly reopens it.
+ * `.claude/docs/references/measured-foundations.md`). Whoever needs to
+ * assert an absence or count with precision must go through
+ * `snapshotAfterIdle` in `pepito/src/matchers.ts`, which closes that window
+ * with a two-observation stability condition; calling this function
+ * directly reopens it.
  *
  * @param timeoutMs - The real budget for this call: what governs when it throws.
  * @param reportedTimeoutMs - The number that appears in the error message if it

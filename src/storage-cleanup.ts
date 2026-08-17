@@ -2,7 +2,8 @@
  * Clears the origin storage that browser mode leaks between test files that
  * land on the same worker: `localStorage`, `sessionStorage` and cookies
  * belong to the origin, not the document, so they survive per-file
- * isolation (docs/knowledge/aislamiento-tests.md).
+ * isolation (measured — see
+ * `.claude/docs/references/measured-foundations.md`).
  *
  * Each cookie is expired twice per name: once with `path=/` (the one most
  * application code sets) and once with no `path` attribute, in case one was
@@ -15,8 +16,8 @@
  *
  * Measured that it doesn't, in this harness (Chromium via Playwright,
  * `vitest@4.1.10`): the order has no observable effect today — full
- * evidence in docs/knowledge/url-navegacion-browser-mode.md. The order is
- * kept anyway, at no cost, in case some future runner or browser does
+ * evidence in `.claude/docs/references/measured-foundations.md`. The order
+ * is kept anyway, at no cost, in case some future runner or browser does
  * follow the simulated URL.
  *
  * Known and actually verified limit: a cookie set with an explicit `path`

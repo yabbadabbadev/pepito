@@ -29,8 +29,9 @@ five custom matchers plus `setupNetwork`, `mount` and the request
 descriptors, the types are not a courtesy — they are half of what consumers
 install. `package.json` points `types` at `dist/index.d.ts`, and the
 `exports` map declares `types` before `default`. `tsconfig.build.json`
-extends the same `tsconfig.json` that `npm run typecheck` uses, adding only
-`declaration: true`, `rootDir`, `outDir` and `types: []`. So the compiler
+extends the same `tsconfig.json` that `npm run typecheck` uses, adding
+`noEmit: false`, `declaration: true`, `rootDir`, `outDir` and `types: []`,
+and narrowing `include` to `["src"]`. So the compiler
 that says "this type-checks" is the compiler that writes the `.d.ts`: one
 source of truth, no way for the emitted declarations to disagree with the
 checked source.

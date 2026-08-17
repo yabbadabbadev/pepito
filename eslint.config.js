@@ -9,14 +9,14 @@ import reactRefreshPlugin from 'eslint-plugin-react-refresh'
 import vitestGlobals from 'eslint-plugin-vitest-globals'
 import globals from 'globals'
 
-// Config adaptada del boilerplate interno de referencia para que resulte
-// reconocible a quien venga de esos proyectos. Diferencias deliberadas
-// anotadas más abajo.
+// Config adapted from the internal reference boilerplate so it reads
+// familiar to anyone coming from those projects. Deliberate differences
+// are noted below.
 
 export default [
-  // Ignores globales: en flat config, un `ignores` co-ubicado con `files` solo
-  // aplica a ese bloque. El boilerplate lo lleva dentro del bloque principal y
-  // le funciona porque solo linta `src`; aquí lintamos el repo entero.
+  // Global ignores: in flat config, an `ignores` co-located with `files` only
+  // applies to that block. The boilerplate keeps it inside the main block and
+  // that works there because it only lints `src`; here we lint the whole repo.
   {
     ignores: [
       'node_modules/**',
@@ -49,8 +49,8 @@ export default [
     },
     settings: {
       react: {
-        // 'detect' requiere react instalado junto a la config; se fija la
-        // versión a mano en vez de depender de esa resolución.
+        // 'detect' requires react to be installed alongside the config; the
+        // version is pinned by hand instead of relying on that resolution.
         version: '19.2',
       },
     },
@@ -77,24 +77,24 @@ export default [
     files: ['**/*.{ts,tsx}'],
     rules: {
       ...tsPlugin.configs.recommended.rules,
-      // Deben ir DESPUÉS del spread: recommended vuelve a activar reglas que el
-      // bloque anterior apaga, y en flat config gana el último bloque.
+      // Must come AFTER the spread: recommended re-enables rules that the
+      // previous block turns off, and in flat config the last block wins.
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   {
-    // Augmentación de módulos: las interfaces vacías son el mecanismo, no un
-    // descuido.
+    // Module augmentation: empty interfaces are the mechanism, not an
+    // oversight.
     files: ['**/*.d.ts'],
     rules: {
       '@typescript-eslint/no-empty-object-type': 'off',
     },
   },
   {
-    // Scripts de Node sueltos, si los hubiera. El bloque principal solo cubre
-    // js/jsx/ts/tsx, así que los .mjs se lintarían sin globals y cada `process`
-    // o `console` caería en no-undef.
+    // Standalone Node scripts, if any exist. The main block only covers
+    // js/jsx/ts/tsx, so .mjs files would be linted without globals and every
+    // `process` or `console` reference would trip no-undef.
     files: ['**/*.mjs'],
     languageOptions: {
       globals: {
