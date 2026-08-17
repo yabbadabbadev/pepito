@@ -102,8 +102,11 @@ contribute to it, not just that it compiles. What a PR has to meet:
 
 Publishing runs in CI (`.github/workflows/publish.yml`), not by hand: the
 workflow repeats the same verification as the PR (tests, typecheck, build)
-against the exact ref being published, and adds `--provenance`, which a
-local `npm publish` can't give.
+against the exact ref being published. It publishes WITHOUT `--provenance`
+for now: the registry rejects provenance from private source repositories
+(measured on the v0.1.0 publish: E422 "Only public source repositories are
+supported"), so the flag — and the `id-token: write` permission it needs —
+comes back when this repo goes public (see the ROADMAP).
 
 ### Preparation (once, from any machine)
 
@@ -135,7 +138,7 @@ local `npm publish` can't give.
 
    The workflow fires on the tag, repeats the verification (tests,
    typecheck, build), checks that the tag matches the `package.json`
-   version, and publishes with `--provenance`.
+   version, and publishes.
 
 Alternative without a tag: trigger the `publish` workflow by hand from the
 Actions UI (`workflow_dispatch`) — it publishes whatever's in
