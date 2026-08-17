@@ -1,0 +1,42 @@
+name: ci
+
+# Quality gate for the package: blocks the merge if lint, format, typecheck
+# or tests with coverage fail. The minimum coverage (90% lines and branches)
+# is enforced by vitest's coverage config, not by this workflow.
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install package
+        run: npm ci
+
+      - name: Install Chromium
+        # --with-deps also installs the system libraries Chromium needs on
+        # Ubuntu. `npm run setup` (plain playwright install) is for local
+        # use, where those system libraries already exist.
+        run: npx playwright install --with-deps chromium
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests with coverage (90/90 threshold enforced in config)
+        run: npm run coverage
