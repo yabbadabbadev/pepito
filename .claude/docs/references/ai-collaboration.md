@@ -118,18 +118,20 @@ instead of hanging or passing quietly.
 **Active partner** — "explicitly grant permission and encourage AI to push
 back on unclear instructions, challenge assumptions that seem wrong, flag
 contradictions and impossibilities... AI defaults to silent compliance, even
-when instructions don't make sense." Here: task briefs require escalating
-(`BLOCKED` / `NEEDS_CONTEXT`) rather than guessing, and the spec-beats-brief
-rule is paired with an obligation to say so in the report. The commit rule
-goes further: even if a commit on `main` is approved in conversation, the
-correct move is to propose a branch first.
+when instructions don't make sense." Here: the migration plan's Global
+Constraints say _"Any real defect found goes to the review loop, not silent
+fixing"_ — a defect you were not asked about is still yours to raise. And the
+commit rule goes further than pushing back: even if a commit on `main` is
+approved in conversation, the correct move is to propose a branch first.
 
 **Check alignment** — "before letting AI implement, make it show its
 understanding... force it to be very succinct". Here: `brainstorming` before
 designing anything new and `writing-plans` before implementing, both named in
-`CLAUDE.md`'s workflow section; and the per-task briefs, which state the
-requirements the executor must restate and verify against the spec before
-starting.
+`CLAUDE.md`'s workflow section; and the written artifact to check that
+understanding against, which the migration plan names outright: _"The spec's
+Decisions section governs every ambiguity."_ When a task's instructions and
+the spec pull apart, the spec wins — and the divergence is worth saying out
+loud rather than resolving quietly.
 
 **Hooks**, against the obstacle **Selective hearing** — hooks "hook into
 deterministic points in the agent lifecycle... allow for flexible and reliable
