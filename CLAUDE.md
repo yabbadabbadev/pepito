@@ -17,7 +17,7 @@ acceptance suite.
 | -------------- | ---------------------------------------------------------------------- |
 | Migration spec | written: `docs/superpowers/specs/2026-08-17-standalone-repo-design.md` |
 | Migration plan | written: `docs/superpowers/plans/2026-08-17-standalone-repo.md`        |
-| Execution      | **pending** — run the plan with subagent-driven-development            |
+| Execution      | **executed** 2026-08-17 with subagent-driven-development               |
 
 ## Non-negotiable rules
 
@@ -41,16 +41,18 @@ acceptance suite.
   uniformity).
 - **No brand references** to any real company, anywhere.
 
-## Commands (once Task 1 of the plan lands)
+## Commands
 
 ```bash
 npm test                # vitest run, browser mode headless
 npm run test:watch
+npm run test:verbose    # the only way to see console.log (network.log())
 npm run coverage        # enforces 90/90 thresholds
 npm run typecheck
 npm run build           # tsc -p tsconfig.build.json → dist/
 npm run lint            # 0 warnings tolerated
 npm run format
+npm run format:check    # what CI runs
 npm run setup           # playwright install chromium (one-off)
 ```
 
@@ -82,9 +84,14 @@ new, `writing-plans` before implementing, `subagent-driven-development` to
 execute (fresh subagent per task, review between tasks), and
 `verification-before-completion` — command plus output, never intention.
 
-For AI-collaboration patterns (context management, steering, anti-patterns),
-consult `/ai-patterns` and the distilled notes in
-`.claude/docs/references/` once the migration creates them.
+The agent-facing references in `.claude/docs/references/` are loaded on
+demand, not always: `measured-foundations.md` (the findings the design stands
+on, each labeled measured or reasoned, with pointers to the original evidence
+in `../vbmmsw/docs/knowledge/`) before touching the event listeners, the
+registry, the matchers or the storage cleanup; `build-tooling.md` before
+touching the build; `ai-collaboration.md` for the collaboration patterns this
+repo already runs on (context management, steering, verification,
+anti-patterns), distilled from `/ai-patterns`.
 
 ## Releasing
 
