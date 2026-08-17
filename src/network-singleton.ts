@@ -1,22 +1,23 @@
 import type { SetupWorker } from 'msw/browser'
 
-/** Lo que `mount` necesita de `setupNetwork()`: el worker donde registrar handlers de test y el `href` original que restaurar entre tests. */
+/** What `mount` needs from `setupNetwork()`: the worker to register test handlers on and the original `href` to restore between tests. */
 export interface NetworkContext {
   worker: SetupWorker
   initialHref: string
 }
 
-// Módulo por fichero de test en browser mode (docs/knowledge/aislamiento-tests.md):
-// esta variable no fuga entre ficheros, así que un fichero que nunca llama a
-// setupNetwork ve siempre `undefined` aquí, sin necesitar un reset explícito.
+// Module per test file in browser mode (docs/knowledge/aislamiento-tests.md):
+// this variable doesn't leak between files, so a file that never calls
+// setupNetwork always sees `undefined` here, with no need for an explicit
+// reset.
 let context: NetworkContext | undefined
 
-/** Publica el contexto de `setupNetwork()` para que `mount` lo lea; una llamada por fichero de test. */
+/** Publishes `setupNetwork()`'s context for `mount` to read; one call per test file. */
 export function registerNetworkContext(nextContext: NetworkContext): void {
   context = nextContext
 }
 
-/** Lee el contexto publicado o lanza con instrucción si `setupNetwork()` no se llamó antes que `caller`. */
+/** Reads the published context or throws with a fix instruction if `setupNetwork()` wasn't called before `caller`. */
 export function requireNetworkContext(caller: string): NetworkContext {
   if (!context) {
     throw new Error(

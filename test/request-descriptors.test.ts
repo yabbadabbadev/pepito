@@ -8,7 +8,7 @@ import {
   request,
 } from '../src/request-descriptors'
 
-test('cada builder delega en request con su verbo HTTP', () => {
+test('each builder delegates to request with its HTTP verb', () => {
   const builders = [
     [get, 'GET'],
     [post, 'POST'],
@@ -27,7 +27,7 @@ test('cada builder delega en request con su verbo HTTP', () => {
   }
 })
 
-test('request es el escape hatch para cualquier método, sin opciones', () => {
+test('request is the escape hatch for any method, with no options', () => {
   expect(request('OPTIONS', '/api/products')).toEqual({
     method: 'OPTIONS',
     path: '/api/products',

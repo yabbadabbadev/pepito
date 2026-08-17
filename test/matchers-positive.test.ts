@@ -2,19 +2,19 @@ import { get } from '../src'
 import { stripAnsi } from './ansi'
 import './setup'
 
-test('toHaveBeenRequested encuentra una petición ya hecha', async () => {
+test('toHaveBeenRequested finds a request already made', async () => {
   await fetch('/api/products')
 
   await expect(get('/api/products')).toHaveBeenRequested()
 })
 
-test('toHaveBeenRequested reintenta: la petición puede llegar después de asertar', async () => {
+test('toHaveBeenRequested retries: the request can arrive after asserting', async () => {
   setTimeout(() => void fetch('/api/products'), 80)
 
   await expect(get('/api/products')).toHaveBeenRequested()
 })
 
-test('CRITERIO DE ACEPTACIÓN: passthrough cumple toHaveBeenRequested pero NO toHaveBeenIntercepted', async () => {
+test('ACCEPTANCE CRITERION: passthrough satisfies toHaveBeenRequested but NOT toHaveBeenIntercepted', async () => {
   await fetch('/api/passthrough')
 
   await expect(get('/api/passthrough')).toHaveBeenRequested()
@@ -28,7 +28,7 @@ test('CRITERIO DE ACEPTACIÓN: passthrough cumple toHaveBeenRequested pero NO to
   expect(failure).toContain('toHaveBeenIntercepted')
 })
 
-test('el mensaje de fallo lleva el tráfico observado, color y diff', async () => {
+test('the failure message carries the observed traffic, color and diff', async () => {
   await fetch('/api/products?filtro=pan')
 
   let failure = ''
@@ -40,28 +40,28 @@ test('el mensaje de fallo lleva el tráfico observado, color y diff', async () =
     failure = error instanceof Error ? error.message : String(error)
   }
 
-  expect(failure).toContain('/api/products') // el volcado del tráfico
-  expect(failure).toContain(`${String.fromCharCode(27)}[`) // ANSI, medido en spike
+  expect(failure).toContain('/api/products') // the traffic dump
+  expect(failure).toContain(`${String.fromCharCode(27)}[`) // ANSI, measured in a spike
   expect(failure).toContain('- Expected')
   expect(failure).toContain('+ Received')
 })
 
-test('sin ninguna petición al mismo método y ruta, el mensaje no busca un diff que no existe', async () => {
-  await fetch('/api/products') // tráfico real, pero de una ruta distinta
+test('with no request to the same method and route, the message does not look for a diff that does not exist', async () => {
+  await fetch('/api/products') // real traffic, but for a different route
 
   let failure = ''
   try {
-    await expect(get('/api/nunca-solicitada')).toHaveBeenRequested()
+    await expect(get('/api/never-requested')).toHaveBeenRequested()
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }
 
-  expect(failure).toContain('/api/nunca-solicitada') // lo esperado, en el hint
-  expect(failure).toContain('/api/products') // el tráfico real, en el volcado
-  expect(failure).not.toContain('- Expected') // no hay candidato, no hay diff que enseñar
+  expect(failure).toContain('/api/never-requested') // what was expected, in the hint
+  expect(failure).toContain('/api/products') // the real traffic, in the dump
+  expect(failure).not.toContain('- Expected') // no candidate, no diff to show
 })
 
-test('el mensaje de .not.toHaveBeenIntercepted() lleva el hint negado, no el positivo', async () => {
+test('the .not.toHaveBeenIntercepted() message carries the negated hint, not the positive one', async () => {
   await fetch('/api/products')
 
   let failure = ''

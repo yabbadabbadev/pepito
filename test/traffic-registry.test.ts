@@ -20,7 +20,7 @@ const productsRequestStart = () => ({
   body: Promise.resolve(undefined),
 })
 
-test('una petición registrada aparece en el snapshot con su body resuelto', async () => {
+test('a recorded request appears in the snapshot with its body resolved', async () => {
   recordRequestStart('r1', {
     ...productsRequestStart(),
     method: 'POST',
@@ -35,14 +35,14 @@ test('una petición registrada aparece en el snapshot con su body resuelto', asy
   expect(traffic[0]?.matched).toBe(false)
 })
 
-test('dos peticiones idénticas son dos entradas: el conteo sale gratis', async () => {
+test('two identical requests are two entries: the count comes for free', async () => {
   recordRequestStart('r1', productsRequestStart())
   recordRequestStart('r2', productsRequestStart())
 
   expect(await snapshotTraffic()).toHaveLength(2)
 })
 
-test('los veredictos se correlacionan por requestId', async () => {
+test('verdicts are correlated by requestId', async () => {
   recordRequestStart('r1', productsRequestStart())
   recordMatch('r1')
   recordMockedResponse('r1', 201, Promise.resolve({ id: 1 }))
@@ -55,10 +55,11 @@ test('los veredictos se correlacionan por requestId', async () => {
   expect(entry?.responseBody).toEqual({ id: 1 })
 })
 
-test('un veredicto de una petición desconocida se ignora sin romper nada', async () => {
-  // Las cuatro funciones comparten la misma guarda (`if (entry) ...`): un
-  // evento de MSW puede llegar para un requestId que resetTraffic() ya vació
-  // del registro, y ninguna debe crear una entrada fantasma ni lanzar.
+test('a verdict for an unknown request is ignored without breaking anything', async () => {
+  // The four functions share the same guard (`if (entry) ...`): an MSW
+  // event can arrive for a requestId that resetTraffic() already cleared
+  // from the registry, and none of them should create a phantom entry or
+  // throw.
   recordMatch('fantasma')
   recordMockedResponse('fantasma', 200, Promise.resolve(undefined))
   recordBypassResponse('fantasma', 404)
@@ -68,7 +69,7 @@ test('un veredicto de una petición desconocida se ignora sin romper nada', asyn
   expect(inFlightCount()).toBe(0)
 })
 
-test('el contador sube con request:start y baja con la respuesta', () => {
+test('the counter goes up with request:start and down with the response', () => {
   recordRequestStart('r1', productsRequestStart())
   expect(inFlightCount()).toBe(1)
 
@@ -76,7 +77,7 @@ test('el contador sube con request:start y baja con la respuesta', () => {
   expect(inFlightCount()).toBe(0)
 })
 
-test('waitForNetworkIdle resuelve cuando la red se calma', async () => {
+test('waitForNetworkIdle resolves when the network settles', async () => {
   recordRequestStart('r1', productsRequestStart())
   setTimeout(() => recordMockedResponse('r1', 200, Promise.resolve({})), 50)
 
@@ -85,7 +86,7 @@ test('waitForNetworkIdle resuelve cuando la red se calma', async () => {
   expect(inFlightCount()).toBe(0)
 })
 
-test('waitForNetworkIdle agota el timeout LANZANDO con el volcado de lo pendiente', async () => {
+test('waitForNetworkIdle exhausts the timeout by THROWING with the dump of what is pending', async () => {
   recordRequestStart('r1', {
     ...productsRequestStart(),
     path: '/api/colgada',
@@ -94,11 +95,11 @@ test('waitForNetworkIdle agota el timeout LANZANDO con el volcado de lo pendient
   await expect(waitForNetworkIdle(120)).rejects.toThrow(/\/api\/colgada/)
 })
 
-test('waitForNetworkIdle reporta el presupuesto TOTAL cuando se le pasa distinto del real', async () => {
-  // snapshotAfterIdle (matchers.ts) llama con el resto de un presupuesto
-  // global como primer argumento, pero pide que el mensaje hable del
-  // presupuesto total: sin el segundo argumento, la última sub-llamada
-  // reportaría un resto de milisegundos en vez del total real.
+test('waitForNetworkIdle reports the TOTAL budget when it is given a different one from the real one', async () => {
+  // snapshotAfterIdle (matchers.ts) calls with the remainder of a global
+  // budget as the first argument, but requires the message to talk about
+  // the total budget: without the second argument, the last sub-call would
+  // report a remaining fraction of milliseconds instead of the real total.
   recordRequestStart('r1', {
     ...productsRequestStart(),
     path: '/api/colgada',

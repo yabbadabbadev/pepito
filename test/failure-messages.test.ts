@@ -1,10 +1,10 @@
 import { formatTraffic } from '../src/failure-messages'
 import type { ResolvedRequest } from '../src/traffic-registry'
 
-// Forma que tiene una entrada justo después de recordRequestStart(): sin
-// veredicto (ningún flag a true) y sin respuesta (status null). No hace falta
-// pasar por MSW para producirla — es la misma forma que traffic-registry.ts
-// documenta, así que se construye a mano.
+// Shape an entry has right after recordRequestStart(): no verdict (no flag
+// true) and no response (status null). No need to go through MSW to
+// produce it — it's the same shape traffic-registry.ts documents, so it's
+// built by hand.
 const inFlightEntry: ResolvedRequest = {
   requestId: 'r1',
   method: 'GET',
@@ -20,11 +20,11 @@ const inFlightEntry: ResolvedRequest = {
   responseBody: undefined,
 }
 
-test('sin tráfico observado, el volcado lo dice en vez de enseñar una lista vacía', () => {
+test('with no traffic observed, the dump says so instead of showing an empty list', () => {
   expect(formatTraffic([])).toBe('  (no traffic observed)')
 })
 
-test('una petición todavía en vuelo se vuelca como "sin veredicto" y "(sin respuesta)"', () => {
+test('a request still in flight is dumped as "no verdict" and "(no response)"', () => {
   const line = formatTraffic([inFlightEntry])
 
   expect(line).toContain('[no verdict]')

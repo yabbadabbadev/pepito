@@ -4,13 +4,13 @@ import { stripAnsi } from './ansi'
 import { ProductListMother } from './mothers/product-list-mother'
 import { worker } from './setup'
 
-test('una suite limpia no tiene peticiones sin handler', async () => {
+test('a clean suite has no requests without a handler', async () => {
   await fetch('/api/products')
 
   await expect.network().toHaveNoUnhandledRequests()
 })
 
-test('una petición sin handler hace saltar el guardarraíl con su path', async () => {
+test('a request without a handler trips the guardrail with its path', async () => {
   await fetch('/api/olvidada')
 
   let failure = ''
@@ -22,19 +22,19 @@ test('una petición sin handler hace saltar el guardarraíl con su path', async 
   expect(failure).toContain('/api/olvidada')
 })
 
-test('passthrough deliberado NO cuenta como unhandled', async () => {
+test('deliberate passthrough does NOT count as unhandled', async () => {
   await fetch('/api/passthrough')
 
   await expect.network().toHaveNoUnhandledRequests()
 })
 
-test('network.log() vuelca el tráfico sin lanzar', async () => {
+test('network.log() dumps the traffic without throwing', async () => {
   await fetch('/api/products')
 
   await network.log()
 })
 
-test('toHaveNoUnhandledRequests fuera de expect.network() falla con una instrucción', async () => {
+test('toHaveNoUnhandledRequests outside expect.network() fails with an instruction', async () => {
   let failure = ''
   try {
     await expect('/api/products').toHaveNoUnhandledRequests()
@@ -44,7 +44,7 @@ test('toHaveNoUnhandledRequests fuera de expect.network() falla con una instrucc
   expect(failure).toContain('expect.network()')
 })
 
-test('el mensaje de .not.toHaveNoUnhandledRequests() lleva el hint negado y dice que el tráfico llegó limpio', async () => {
+test('the .not.toHaveNoUnhandledRequests() message carries the negated hint and says the traffic came in clean', async () => {
   await fetch('/api/products')
 
   let failure = ''
@@ -58,7 +58,7 @@ test('el mensaje de .not.toHaveNoUnhandledRequests() lleva el hint negado y dice
   expect(failure).toContain('the traffic came in clean')
 })
 
-test('network.idle() espera a que una petición lenta cierre antes de resolver', async () => {
+test('network.idle() waits for a slow request to close before resolving', async () => {
   worker.use(
     http.get('/api/lenta', async () => {
       await delay(200)
@@ -73,6 +73,6 @@ test('network.idle() espera a que una petición lenta cierre antes de resolver',
   await expect(get('/api/lenta')).toHaveRespondedWith(200)
 })
 
-test('network.idle() con la red ya en calma resuelve sin lanzar', async () => {
+test('network.idle() with the network already calm resolves without throwing', async () => {
   await network.idle()
 })

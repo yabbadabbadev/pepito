@@ -21,14 +21,15 @@ function formatTrafficLine(entry: ResolvedRequest): string {
   return `  ${entry.method} ${entry.path}${formatQuery(entry.searchParams)} → ${status} [${formatFlags(entry)}]`
 }
 
-/** Vuelca el tráfico observado, una línea por entrada, para incrustar en un mensaje de fallo. */
+/** Dumps the observed traffic, one line per entry, to embed in a failure message. */
 export function formatTraffic(traffic: ResolvedRequest[]): string {
   if (traffic.length === 0) return '  (no traffic observed)'
   return traffic.map(formatTrafficLine).join('\n')
 }
 
-// Solo lo que identifica la petición esperada, no las opciones de comparación
-// (`exact`): eso es un modo de matchesSpec, no algo que uno "esperaba recibir".
+// Only what identifies the expected request, not the comparison options
+// (`exact`): that's a mode of matchesSpec, not something one "expected to
+// receive".
 function describeSpec(spec: RequestSpec): Record<string, unknown> {
   return {
     method: spec.method,
@@ -39,10 +40,10 @@ function describeSpec(spec: RequestSpec): Record<string, unknown> {
 }
 
 /**
- * Compone el mensaje de fallo de los matchers de red: el hint del matcher,
- * qué se esperaba, un diff contra el candidato más parecido (mismo método y
- * path, aunque no case del todo) si existe, y el volcado completo del
- * tráfico observado.
+ * Composes the network matchers' failure message: the matcher's hint, what
+ * was expected, a diff against the closest candidate (same method and path,
+ * even if it doesn't fully match) if one exists, and the full dump of the
+ * observed traffic.
  */
 export function requestFailureMessage(messageContext: {
   utils: MatcherState['utils']
@@ -55,9 +56,10 @@ export function requestFailureMessage(messageContext: {
 
   const sections = [
     utils.matcherHint(matcherName, undefined, undefined, { isNot }),
-    // Bajo `.not`, lo que falló es que SÍ hubo una petición que casaba: el
-    // hint ya lo dice con el "not.", pero la línea de "Esperaba" sin más
-    // seguiría leyéndose como el caso positivo si no cambia con ella.
+    // Under `.not`, what failed is that there WAS a matching request: the
+    // hint already says so with the "not.", but the "Expected" line by
+    // itself would still read as the positive case if it didn't change
+    // along with it.
     isNot
       ? `Not expected: ${utils.printExpected(describeSpec(spec))}`
       : `Expected: ${utils.printExpected(describeSpec(spec))}`,
@@ -80,9 +82,9 @@ export function requestFailureMessage(messageContext: {
 }
 
 /**
- * Compone el mensaje de fallo de `toHaveBeenRequestedTimes`: no hay
- * "candidato más parecido" que mostrar como en `requestFailureMessage`, sino
- * un conteo esperado contra el realmente observado, más el volcado completo.
+ * Composes the `toHaveBeenRequestedTimes` failure message: there's no
+ * "closest candidate" to show like in `requestFailureMessage`, but an
+ * expected count against the one actually observed, plus the full dump.
  */
 export function requestCountFailureMessage(messageContext: {
   utils: MatcherState['utils']
@@ -95,10 +97,10 @@ export function requestCountFailureMessage(messageContext: {
   const { utils, spec, expectedCount, foundCount, traffic, isNot } =
     messageContext
 
-  // Bajo `.not`, `foundCount` es necesariamente igual a `expectedCount` (es lo
-  // que hizo fallar la aserción negada): "encontré 2" a secas se leería como
-  // un eco sin sentido si no dice también que ese conteo es justo el que no
-  // se esperaba.
+  // Under `.not`, `foundCount` is necessarily equal to `expectedCount` (that's
+  // what made the negated assertion fail): a bare "found 2" would read as a
+  // meaningless echo if it didn't also say that count is exactly the one
+  // that wasn't expected.
   const leadLine = isNot
     ? `Did not expect exactly ${expectedCount} request(s) to ${utils.printExpected(describeSpec(spec))}, yet found ${foundCount}`
     : `Expected ${expectedCount} request(s) to ${utils.printExpected(describeSpec(spec))}, found ${foundCount}`
@@ -115,10 +117,10 @@ export function requestCountFailureMessage(messageContext: {
 }
 
 /**
- * Compone el mensaje de fallo de `toHaveNoUnhandledRequests`: qué peticiones
- * llegaron sin handler (método y path, lo mínimo para localizarlas en el
- * código) y a continuación el volcado completo del tráfico, por si el
- * handler que falta se hace evidente al verlas junto al resto.
+ * Composes the `toHaveNoUnhandledRequests` failure message: which requests
+ * arrived without a handler (method and path, the minimum needed to locate
+ * them in the code) followed by the full traffic dump, in case the missing
+ * handler becomes obvious when seen alongside the rest.
  */
 export function noUnhandledRequestsFailureMessage(messageContext: {
   utils: MatcherState['utils']
@@ -128,9 +130,10 @@ export function noUnhandledRequestsFailureMessage(messageContext: {
 }): string {
   const { utils, unhandledEntries, traffic, isNot } = messageContext
 
-  // Bajo `.not`, lo que falló es que `unhandledEntries` está VACÍO — listar
-  // "Peticiones sin handler:" seguido de nada es el bug que este `isNot`
-  // arregla: la aserción negada exigía tráfico sin handler y no lo hubo.
+  // Under `.not`, what failed is that `unhandledEntries` is EMPTY — listing
+  // "Unhandled requests:" followed by nothing is the bug this `isNot`
+  // fixes: the negated assertion demanded traffic without a handler and
+  // there was none.
   const leadLine = isNot
     ? 'Expected to find some request without a handler, but the traffic came in clean'
     : `Unhandled requests:\n${unhandledEntries
@@ -157,13 +160,12 @@ function describeExpectedResponse(
 }
 
 /**
- * Compone el mensaje de fallo de `toHaveRespondedWith`: el hint del matcher,
- * la respuesta esperada, un diff contra el candidato interceptado y con spec
- * casada más parecido (aunque no case en status ni en body) si existe, y el
- * volcado completo del tráfico observado. El candidato exige `matched &&
- * mocked` porque una entrada de passthrough puede casar la spec de la
- * petición sin haber sido interceptada nunca: mostrarla como "casi" sería
- * engañoso.
+ * Composes the `toHaveRespondedWith` failure message: the matcher's hint,
+ * the expected response, a diff against the closest intercepted-and-matched
+ * candidate (even if it doesn't match on status or body) if one exists, and
+ * the full dump of the observed traffic. The candidate requires `matched &&
+ * mocked` because a passthrough entry can match the request's spec without
+ * ever having been intercepted: showing it as "close" would be misleading.
  */
 export function respondedWithFailureMessage(messageContext: {
   utils: MatcherState['utils']
@@ -187,10 +189,10 @@ export function respondedWithFailureMessage(messageContext: {
     (entry) => entry.matched && entry.mocked && matchesSpec(entry, spec),
   )
   if (candidate) {
-    // Misma clave (`body`) a los dos lados, y ausente en los dos si `expected`
-    // no la trae: con nombres distintos (`body` contra `responseBody`) el
-    // diff no encuentra terreno común y enseña dos bloques enteros sin
-    // relación en vez de señalar el campo que de verdad cambió dentro del
+    // Same key (`body`) on both sides, and absent on both if `expected`
+    // doesn't carry it: with different names (`body` vs `responseBody`) the
+    // diff finds no common ground and shows two whole unrelated blocks
+    // instead of pointing at the field that actually changed inside the
     // body.
     const diff = utils.diff(
       describeExpectedResponse(expected),

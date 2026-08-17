@@ -6,18 +6,18 @@ import {
   useSearchParams,
 } from 'react-router'
 
-// Fixture calcado de spike/test/url-history.test.tsx: monta con un
-// BrowserRouter real para comprobar que `mount()` deja la URI completa
-// (path, query y hash) disponible a través de los hooks del router, no solo
-// en el `location` global.
+// Fixture copied from spike/test/url-history.test.tsx: mounts with a real
+// BrowserRouter to check that `mount()` leaves the full URI (path, query
+// and hash) available through the router's hooks, not just on the global
+// `location`.
 function CatalogPage() {
   const [searchParams] = useSearchParams()
   const { hash } = useLocation()
   return (
     <>
-      <p>Catálogo de productos</p>
-      <p>{`filtro: ${searchParams.get('filtro') ?? 'ninguno'}`}</p>
-      <p>{`hash: ${hash || 'ninguno'}`}</p>
+      <p>Product catalog</p>
+      <p>{`filter: ${searchParams.get('filter') ?? 'none'}`}</p>
+      <p>{`hash: ${hash || 'none'}`}</p>
     </>
   )
 }
@@ -26,7 +26,7 @@ export function RoutedApp() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<p>Página de inicio</p>} />
+        <Route path="/" element={<p>Home page</p>} />
         <Route path="/products" element={<CatalogPage />} />
       </Routes>
     </BrowserRouter>

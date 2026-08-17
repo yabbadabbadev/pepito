@@ -3,25 +3,26 @@ import type { RequestHandler } from 'msw'
 import { render, type RenderResult } from 'vitest-browser-react'
 import { requireNetworkContext } from './network-singleton'
 
-/** Opciones de {@link mount}. Las dos son opcionales: `mount(<App />)` a secas monta y punto. */
+/** Options for {@link mount}. Both are optional: `mount(<App />)` alone just mounts. */
 export interface MountOptions {
   /**
-   * URI same-origin que empieza por `/`, query y hash incluidos (por ejemplo
-   * `/products?filtro=pan#detalle`). Se aplica con `history.pushState` antes
-   * del render para que el router de la aplicación la lea al montar.
+   * Same-origin URI starting with `/`, query and hash included (for example
+   * `/products?filter=bread#detail`). Applied with `history.pushState`
+   * before render so the application's router reads it on mount.
    */
   path?: string
   /**
-   * Handlers de MSW propios de este test. Entran con `worker.use()` antes del
-   * render, así que tienen prioridad sobre los de la suite para la misma
-   * ruta, y `setupNetwork()` los deshace en su `afterEach`.
+   * MSW handlers of this test's own. Installed with `worker.use()` before
+   * render, so they take priority over the suite's for the same route, and
+   * `setupNetwork()` undoes them in its `afterEach`.
    */
   network?: RequestHandler[]
 }
 
-// El prefijo '/' no basta: '//evil.com' es protocol-relative y WHATWG trata
-// '/\' como introductor de authority también, así que ambos lo pasarían y
-// sería pushState quien lanzase el SecurityError en crudo más abajo.
+// The '/' prefix alone isn't enough: '//evil.com' is protocol-relative and
+// WHATWG also treats '/\' as introducing an authority, so both would pass
+// it and pushState would be the one throwing the raw SecurityError further
+// down.
 function isSameOriginPath(path: string): boolean {
   if (!path.startsWith('/')) return false
   try {
@@ -32,27 +33,28 @@ function isSameOriginPath(path: string): boolean {
 }
 
 /**
- * Monta `ui` con `vitest-browser-react`, opcionalmente en una ruta real del
- * documento y con handlers de MSW propios del test.
+ * Mounts `ui` with `vitest-browser-react`, optionally on a real document
+ * route and with test-specific MSW handlers.
  *
- * El `path`, si se da, tiene que ser una URI same-origin que empiece por
- * `/`: se aplica con `history.pushState` ANTES del render porque el
- * `BrowserRouter` de la aplicación lee la URL al montar y después solo
- * escucha `popstate` (docs/knowledge/url-navegacion-browser-mode.md). La
- * URI puede llevar query y hash: atraviesan el router igual que el path.
- * `setupNetwork()` restaura la URL original en su `afterEach`, así que cada
- * test parte de la misma ruta sin importar lo que haya montado el anterior.
+ * `path`, if given, has to be a same-origin URI starting with `/`: it's
+ * applied with `history.pushState` BEFORE render because the application's
+ * `BrowserRouter` reads the URL on mount and only listens to `popstate`
+ * afterwards (docs/knowledge/url-navegacion-browser-mode.md). The URI can
+ * carry query and hash: they flow through the router the same as the path.
+ * `setupNetwork()` restores the original URL in its `afterEach`, so every
+ * test starts from the same route regardless of what the previous one
+ * mounted.
  *
- * `network`, si se da, se registra con `worker.use()` antes del render: sus
- * handlers tienen prioridad sobre los de la suite para esta petición, con el
- * mismo criterio de resolución de MSW.
+ * `network`, if given, is registered with `worker.use()` before render: its
+ * handlers take priority over the suite's for this request, with the same
+ * resolution rules as MSW.
  *
  * @example
  * ```tsx
  * import { mount } from '@yabbadabbadev/pepito'
  *
- * const screen = await mount(<App />, { path: '/products?filtro=pan' })
- * await expect.element(screen.getByText('filtro: pan')).toBeVisible()
+ * const screen = await mount(<App />, { path: '/products?filter=bread' })
+ * await expect.element(screen.getByText('filter: bread')).toBeVisible()
  * ```
  */
 export async function mount(
@@ -70,8 +72,9 @@ export async function mount(
     )
   }
 
-  // Antes del render: el router de la app lee la URL al montar y después
-  // solo escucha popstate. Ver docs/knowledge/url-navegacion-browser-mode.md.
+  // Before render: the app's router reads the URL on mount and only
+  // listens to popstate afterwards. See
+  // docs/knowledge/url-navegacion-browser-mode.md.
   if (path !== undefined) {
     history.pushState({}, '', path)
   }

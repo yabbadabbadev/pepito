@@ -4,11 +4,11 @@ import { stripAnsi } from './ansi'
 import { worker } from './setup'
 import { ProductListMother } from './mothers/product-list-mother'
 
-test('not.toHaveBeenRequested pasa cuando de verdad no hubo petición', async () => {
+test('not.toHaveBeenRequested passes when there really was no request', async () => {
   await expect(get('/api/products')).not.toHaveBeenRequested()
 })
 
-test('DETERMINISMO: not espera la calma y caza la petición lenta en vuelo', async () => {
+test('DETERMINISM: not waits for calm and catches the slow request in flight', async () => {
   worker.use(
     http.get('/api/lenta', async () => {
       await delay(120)
@@ -17,7 +17,7 @@ test('DETERMINISMO: not espera la calma y caza la petición lenta en vuelo', asy
   )
   void fetch('/api/lenta')
 
-  // Sin quiescencia esto pasaría en falso: la petición aún no se ve.
+  // Without quiescence this would pass falsely: the request isn't visible yet.
   let failure = ''
   try {
     await expect(get('/api/lenta')).not.toHaveBeenRequested()
@@ -27,7 +27,7 @@ test('DETERMINISMO: not espera la calma y caza la petición lenta en vuelo', asy
   expect(failure).toContain('/api/lenta')
 })
 
-test('DETERMINISMO: Times(2) no confunde 2 con 3 aunque la tercera esté en vuelo', async () => {
+test('DETERMINISM: Times(2) does not confuse 2 with 3 even though the third is in flight', async () => {
   worker.use(
     http.get('/api/lenta', async () => {
       await delay(120)
@@ -35,7 +35,7 @@ test('DETERMINISMO: Times(2) no confunde 2 con 3 aunque la tercera esté en vuel
     }),
   )
   await Promise.all([fetch('/api/lenta'), fetch('/api/lenta')])
-  void fetch('/api/lenta') // la tercera, todavía en vuelo al asertar
+  void fetch('/api/lenta') // the third, still in flight when asserting
 
   let failure = ''
   try {
@@ -43,10 +43,10 @@ test('DETERMINISMO: Times(2) no confunde 2 con 3 aunque la tercera esté en vuel
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }
-  expect(failure).toMatch(/3/) // el mensaje dice cuántas encontró de verdad
+  expect(failure).toMatch(/3/) // the message says how many it actually found
 })
 
-test('Times(3) pasa cuando son exactamente 3', async () => {
+test('Times(3) passes when there are exactly 3', async () => {
   worker.use(
     http.get('/api/rapida', () => HttpResponse.json(ProductListMother.empty())),
   )
@@ -59,7 +59,7 @@ test('Times(3) pasa cuando son exactamente 3', async () => {
   await expect(get('/api/rapida')).toHaveBeenRequestedTimes(3)
 })
 
-test('el mensaje de .not.toHaveBeenRequested() lleva el hint negado, no el positivo', async () => {
+test('the .not.toHaveBeenRequested() message carries the negated hint, not the positive one', async () => {
   await fetch('/api/products')
 
   let failure = ''
@@ -73,7 +73,7 @@ test('el mensaje de .not.toHaveBeenRequested() lleva el hint negado, no el posit
   expect(failure).toContain('Not expected:')
 })
 
-test('el mensaje de .not.toHaveBeenRequestedTimes(n) lleva el hint negado y dice que sí encontró ese conteo', async () => {
+test('the .not.toHaveBeenRequestedTimes(n) message carries the negated hint and says it did find that count', async () => {
   worker.use(
     http.get('/api/rapida', () => HttpResponse.json(ProductListMother.empty())),
   )

@@ -18,19 +18,19 @@ import {
 } from './traffic-registry'
 import type { ResolvedRequest } from './traffic-registry'
 
-// 1s de margen sobre el sondeo cada RETRY_INTERVAL_MS: suficiente para que una
-// petición lanzada justo después del assert tenga tiempo de completar el viaje
-// real por el service worker (browser mode, no un mock en el mismo hilo).
+// 1s of margin on top of polling every RETRY_INTERVAL_MS: enough for a
+// request fired right after the assert to have time to complete its real
+// trip through the service worker (browser mode, not a same-thread mock).
 const RETRY_TIMEOUT_MS = 1000
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// El atajo `toHaveRespondedWith(500)` y la forma larga
-// `toHaveRespondedWith({ status: 500 })` conviven en la firma pública para que
-// el caso común no obligue a envolver un objeto; normalizar aquí, una sola
-// vez, evita repartir el `typeof` por el resto del matcher.
+// The shorthand `toHaveRespondedWith(500)` and the long form
+// `toHaveRespondedWith({ status: 500 })` coexist in the public signature so
+// the common case doesn't force wrapping an object; normalizing here, once,
+// avoids spreading the `typeof` check across the rest of the matcher.
 function normalizeExpectedResponse(
   expected: number | ExpectedResponse,
 ): ExpectedResponse {
@@ -38,10 +38,10 @@ function normalizeExpectedResponse(
 }
 
 /**
- * Sondea `snapshotTraffic()` hasta que una entrada case con `spec` y cumpla
- * `isSatisfyingEntry`, o hasta agotar `RETRY_TIMEOUT_MS`. Devuelve el último
- * tráfico visto incluso si nunca hubo veredicto positivo: los matchers lo
- * necesitan para componer el mensaje de fallo.
+ * Polls `snapshotTraffic()` until an entry matches `spec` and satisfies
+ * `isSatisfyingEntry`, or until `RETRY_TIMEOUT_MS` runs out. Returns the
+ * last traffic seen even if there was never a positive verdict: the
+ * matchers need it to compose the failure message.
  */
 async function pollTraffic(
   spec: RequestSpec,
@@ -60,29 +60,30 @@ async function pollTraffic(
 }
 
 /**
- * Espera a que la red se calme (dos observaciones consecutivas en calma,
- * separadas por un intervalo de sondeo) y devuelve un único snapshot del
- * tráfico acumulado hasta ese momento.
+ * Waits for the network to settle (two consecutive calm observations,
+ * separated by a poll interval) and returns a single snapshot of the
+ * traffic accumulated up to that point.
  *
- * Úsala para afirmar una AUSENCIA o un CONTEO EXACTO, nunca para el caso
- * positivo con reintento (ese es `pollTraffic`): es la base de la rama
- * negada de `resolveTraffic` y de `toHaveBeenRequestedTimes`, y la usa
- * también `network.log()` (network.ts), fuera de este fichero.
+ * Use it to assert an ABSENCE or an EXACT COUNT, never for the positive,
+ * retrying case (that's `pollTraffic`): it's the basis for the negated
+ * branch of `resolveTraffic` and for `toHaveBeenRequestedTimes`, and
+ * `network.log()` (network.ts) also uses it, outside this file.
  *
- * Presupuesto total `QUIESCENCE_TIMEOUT_MS`: si la red no se calma a tiempo,
- * lanza con el volcado de lo pendiente en vez de devolver un booleano mudo.
- * Racional de diseño completo en el bloque de comentario justo debajo de la
- * función.
+ * Total budget `QUIESCENCE_TIMEOUT_MS`: if the network doesn't settle in
+ * time, it throws with a dump of what's pending instead of returning a mute
+ * boolean. Full design rationale in the comment block right below the
+ * function.
  */
 export async function snapshotAfterIdle(): Promise<ResolvedRequest[]> {
   const deadline = performance.now() + QUIESCENCE_TIMEOUT_MS
 
   await sleep(RETRY_INTERVAL_MS)
   for (;;) {
-    // Segundo argumento: si esta sub-llamada agota su resto de presupuesto y
-    // lanza, el mensaje tiene que hablar del presupuesto TOTAL, no del resto
-    // que le tocó a ella (I2 — de lo contrario la última vuelta diría "no se
-    // calmó en 1ms" tras haber esperado casi QUIESCENCE_TIMEOUT_MS enteros).
+    // Second argument: if this sub-call runs out its remaining budget and
+    // throws, the message has to talk about the TOTAL budget, not the
+    // remainder it happened to get (I2 — otherwise the last lap would say
+    // "did not settle within 1ms" after having waited almost the entire
+    // QUIESCENCE_TIMEOUT_MS).
     await waitForNetworkIdle(
       Math.max(1, deadline - performance.now()),
       QUIESCENCE_TIMEOUT_MS,
@@ -92,62 +93,61 @@ export async function snapshotAfterIdle(): Promise<ResolvedRequest[]> {
   }
 }
 
-// Diseño y racional completos, para quien revise esto más adelante:
+// Full design and rationale, for whoever reviews this later:
 //
-// Se exporta (en vez de quedar privada de este fichero) porque network.log()
-// necesita la misma espera de calma sin copiarla ni llamar a
-// waitForNetworkIdle a pelo, lo que reabriría la ventana ciega que cierra
-// esta función. Cualquier matcher futuro con la misma necesidad (negados de
-// toHaveRespondedWith) puede llamarla tal cual sin que haga falta exportar
-// nada más, mientras viva en este fichero junto al resto de matchers.
+// Exported (instead of staying private to this file) because network.log()
+// needs the same calm-wait without copying it or calling waitForNetworkIdle
+// raw, which would reopen the blind window this function closes. Any future
+// matcher with the same need (negated forms of toHaveRespondedWith) can call
+// it as-is without needing to export anything else, as long as it lives in
+// this file alongside the rest of the matchers.
 //
-// Un solo margen fijo antes de `waitForNetworkIdle` no basta: es una
-// asunción de temporización medida en este arnés (vuelta real
-// página-service worker-página de 1 a 6 ms, ver
-// docs/knowledge/quiescencia-red-msw.md), no una garantía. En una CI cargada
-// esa vuelta puede estirarse más allá del margen mientras el `setTimeout` del
-// margen sigue su propio reloj — el check de calma leería el registro vacío
-// justo cuando la petición sigue en camino, precisamente en las pruebas que
-// existen para demostrar que eso no pasa. Por eso se exige una CONDICIÓN DE
-// ESTABILIDAD, no un margen: dos observaciones consecutivas separadas por un
-// intervalo de sondeo, ambas en calma (`inFlightCount() === 0`). Si la
-// segunda ve tráfico nuevo (llegó durante la espera de la primera), se vuelve
-// a esperar la calma y se repite la comprobación.
+// A single fixed margin before `waitForNetworkIdle` isn't enough: it's a
+// timing assumption measured in this harness (real page-service
+// worker-page round trip of 1 to 6 ms, see
+// docs/knowledge/quiescencia-red-msw.md), not a guarantee. On a loaded CI
+// that round trip can stretch past the margin while the margin's own
+// `setTimeout` keeps its own clock — the calm check would read the registry
+// as empty right when the request is still on its way, precisely in the
+// tests that exist to prove that doesn't happen. That's why a STABILITY
+// CONDITION is required, not a margin: two consecutive observations
+// separated by a poll interval, both calm (`inFlightCount() === 0`). If the
+// second one sees new traffic (arrived during the wait for the first), the
+// calm wait repeats and the check runs again.
 //
-// Esto NO cierra la ventana ciega: ninguna espera acotada puede, es la
-// postura preregistrada de docs/knowledge/quiescencia-red-msw.md. Solo
-// estrecha la cota práctica de fallo de un intervalo a dos — razonado a
-// partir de cómo funciona `waitForNetworkIdle`, no medido: este arnés es
-// demasiado rápido para reproducir la CI contendida que motiva el cambio.
-// Las DETERMINISMO de matchers-quiescencia.test.ts miden algo real pero
-// distinto: que el mecanismo completo (margen + doble observación) hace
-// falta frente a una comprobación ingenua o a no esperar en absoluto, no que
-// la segunda observación por sí sola sea detectable en este arnés
-// (verificado por mutación, ver docs/knowledge/quiescencia-red-msw.md).
+// This does NOT close the blind window: no bounded wait can, that's the
+// preregistered position of docs/knowledge/quiescencia-red-msw.md. It only
+// narrows the practical failure margin from one interval to two — reasoned
+// from how `waitForNetworkIdle` works, not measured: this harness is too
+// fast to reproduce the contended CI that motivates the change. The
+// DETERMINISM tests in matchers-quiescencia.test.ts measure something real
+// but different: that the full mechanism (margin + double observation) is
+// needed against a naive check or no wait at all, not that the second
+// observation alone is detectable in this harness (verified by mutation,
+// see docs/knowledge/quiescencia-red-msw.md).
 //
-// El bucle necesita UN presupuesto de reloj para toda la operación, no uno
-// nuevo por vuelta: `waitForNetworkIdle()` sin argumento arranca su propio
-// `QUIESCENCE_TIMEOUT_MS` cada vez que se le llama, así que un relevo de
-// peticiones solapadas (cada una calma el contador justo antes de que otra
-// arranque durante el margen posterior) haría que el bucle nunca convergiera
-// ni lanzara — moriría por el timeout genérico de Vitest, sin el volcado de
-// lo pendiente. `deadline` se calcula una sola vez al entrar y cada sub-
-// llamada recibe el presupuesto que queda, nunca uno completo de nuevo. Si
-// el presupuesto se agota mientras el contador está momentáneamente a cero,
-// la sub-llamada de turno vuelve enseguida (nada que esperar), la
-// comprobación posterior falla si algo arrancó mientras tanto, y la
-// siguiente sub-llamada recibe ~1 ms: si hay algo en vuelo, su propio bucle
-// lo detecta pasado ese resto y lanza con el volcado — acotado a, como
-// mucho, un `RETRY_INTERVAL_MS` extra sobre el presupuesto global, nunca sin
-// límite.
+// The loop needs ONE clock budget for the whole operation, not a fresh one
+// per lap: `waitForNetworkIdle()` with no argument starts its own
+// `QUIESCENCE_TIMEOUT_MS` every time it's called, so a relay of overlapping
+// requests (each one settles the counter just before another starts during
+// the trailing margin) would make the loop never converge or throw — it
+// would die by Vitest's generic timeout, without the dump of what's
+// pending. `deadline` is computed once on entry and each sub-call gets
+// whatever budget is left, never a fresh full one again. If the budget runs
+// out while the counter happens to be at zero, the current sub-call returns
+// right away (nothing to wait for), the check that follows fails if
+// something started meanwhile, and the next sub-call gets ~1 ms: if
+// something is in flight, its own loop detects it once that remainder
+// passes and throws with the dump — bounded to, at most, one extra
+// `RETRY_INTERVAL_MS` on top of the global budget, never unbounded.
 
 /**
- * Punto único de decisión entre reintentar y esperar la calma. `.not`
- * necesita quiescencia: reintentar hasta ver algo, aplicado a una ausencia,
- * daría un falso positivo con cualquier petición todavía en vuelo (la
- * DETERMINISMO de matchers-quiescencia.test.ts caza justo eso). El caso
- * positivo conserva el sondeo con reintento porque ahí sí interesa esperar a
- * que la petición llegue, no a que la red entera calle.
+ * Single decision point between retrying and waiting for calm. `.not`
+ * needs quiescence: retrying until something shows up, applied to an
+ * absence, would give a false positive with any request still in flight
+ * (the DETERMINISM test in matchers-quiescencia.test.ts catches exactly
+ * that). The positive case keeps the retrying poll because there it's the
+ * request arriving that matters, not the whole network going quiet.
  */
 async function resolveTraffic(
   spec: RequestSpec,
@@ -183,9 +183,9 @@ expect.extend({
   },
 
   async toHaveBeenIntercepted(spec: RequestSpec) {
-    // Ni el passthrough (matched sin mocked) ni el 500 fabricado por MSW en
-    // modo error (mocked sin matched) cuentan como interceptado: hace falta
-    // que el propio handler haya respondido. Ver
+    // Neither passthrough (matched without mocked) nor the 500 MSW
+    // fabricates in error mode (mocked without matched) count as
+    // intercepted: the handler itself has to have responded. See
     // docs/knowledge/msw-browser-mode.md.
     const { traffic, pass } = await resolveTraffic(
       spec,
@@ -212,10 +212,10 @@ expect.extend({
   ) {
     const expectedResponse = normalizeExpectedResponse(expected)
 
-    // Lo anterior (interceptada: ni passthrough ni error fabricado de MSW, ver
-    // toHaveBeenIntercepted más arriba), y con esta respuesta: status exacto
-    // más, si se dio, subconjunto del body de la respuesta con las mismas
-    // reglas que matchesSpec aplica a la petición.
+    // The above (intercepted: neither passthrough nor an MSW-fabricated
+    // error, see toHaveBeenIntercepted above), plus this response: exact
+    // status plus, if given, a subset of the response body using the same
+    // rules matchesSpec applies to the request.
     const isSatisfyingEntry = (entry: ResolvedRequest): boolean =>
       entry.matched &&
       entry.mocked &&
@@ -247,9 +247,9 @@ expect.extend({
   },
 
   async toHaveBeenRequestedTimes(spec: RequestSpec, count: number) {
-    // Siempre espera la calma, esté o no negado con `.not`: un conteo exacto
-    // tomado a mitad de tráfico es tan falso como una ausencia tomada a mitad
-    // de tráfico (la otra DETERMINISMO del mismo fichero de test).
+    // Always waits for calm, negated with `.not` or not: an exact count
+    // taken mid-traffic is as false as an absence taken mid-traffic (the
+    // other DETERMINISM test in the same test file).
     const traffic = await snapshotAfterIdle()
     const matchingEntries = traffic.filter((entry) => matchesSpec(entry, spec))
     const foundCount = matchingEntries.length
@@ -269,10 +269,11 @@ expect.extend({
   },
 
   async toHaveNoUnhandledRequests(received: unknown) {
-    // Este matcher no describe una petición: cuelga de `expect.network()`,
-    // el único sitio que produce el marcador `NETWORK_TARGET`. Usado sobre
-    // cualquier otra cosa (un descriptor de `get(...)`, un string) es un
-    // error de uso, no una aserción que falla por datos.
+    // This matcher doesn't describe a request: it hangs off
+    // `expect.network()`, the only place that produces the
+    // `NETWORK_TARGET` marker. Used on anything else (a `get(...)`
+    // descriptor, a string) is a usage error, not an assertion failing on
+    // data.
     if (received !== NETWORK_TARGET) {
       return {
         pass: false,
@@ -297,9 +298,9 @@ expect.extend({
   },
 })
 
-// Vitest no permite declarar propiedades nuevas en `ExpectStatic` vía
-// `expect.extend`: `expect.extend` solo instala matchers dentro de una
-// `Assertion`. `expect.network()` necesita ser una función de primer nivel
-// sobre el propio `expect`, así que se asigna directamente; la forma del
-// tipo la trae la augmentación de `ExpectStatic` en matcher-types.ts.
+// Vitest doesn't allow declaring new properties on `ExpectStatic` via
+// `expect.extend`: `expect.extend` only installs matchers inside an
+// `Assertion`. `expect.network()` needs to be a top-level function on
+// `expect` itself, so it's assigned directly; the type shape comes from the
+// `ExpectStatic` augmentation in matcher-types.ts.
 expect.network = () => expect(NETWORK_TARGET)

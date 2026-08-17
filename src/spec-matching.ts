@@ -25,8 +25,8 @@ function deepEqual(a: unknown, b: unknown): boolean {
   )
 }
 
-// Excluye null (typeof null === 'object') y arrays: unos y otros casan por
-// igualdad profunda directa, no por subconjunto de claves.
+// Excludes null (typeof null === 'object') and arrays: both match by direct
+// deep equality, not by subset of keys.
 function isPlainObject(
   candidate: unknown,
 ): candidate is Record<string, unknown> {
@@ -49,12 +49,12 @@ function matchesSubset(
 }
 
 /**
- * Compara un valor observado contra uno esperado por subconjunto de claves de
- * primer nivel con igualdad profunda por clave (o igualdad profunda directa si
- * `expected` no es un objeto plano), salvo `exact: true`, que exige igualdad
- * estricta de todo el objeto. La usan tanto `matchesSpec` sobre el `body` de
- * la petición como `toHaveRespondedWith` sobre el `responseBody`: misma
- * semántica de subconjunto, dos sitios distintos donde se aplica.
+ * Compares an observed value against an expected one by subset of
+ * top-level keys with deep equality per key (or direct deep equality if
+ * `expected` isn't a plain object), unless `exact: true`, which requires
+ * strict equality of the whole object. Used both by `matchesSpec` over the
+ * request's `body` and by `toHaveRespondedWith` over the `responseBody`:
+ * same subset semantics, two different places it's applied.
  */
 export function matchesBody(
   observed: unknown,
@@ -66,10 +66,10 @@ export function matchesBody(
 }
 
 /**
- * Compara una petición observada contra un `RequestSpec`: método y path por
- * igualdad estricta; `body` y `searchParams` por subconjunto de claves de
- * primer nivel con igualdad profunda por clave, salvo `{ exact: true }`, que
- * exige igualdad estricta de todo el objeto.
+ * Compares an observed request against a `RequestSpec`: method and path by
+ * strict equality; `body` and `searchParams` by subset of top-level keys
+ * with deep equality per key, unless `{ exact: true }`, which requires
+ * strict equality of the whole object.
  */
 export function matchesSpec(
   observed: ResolvedRequest,
@@ -81,9 +81,10 @@ export function matchesSpec(
 
   if (
     spec.searchParams !== undefined &&
-    // observed.searchParams sale de Object.fromEntries(url.searchParams): con
-    // una clave repetida (`?tag=a&tag=b`) solo sobrevive el último valor. El
-    // subconjunto compara ese único valor sin poder detectar la pérdida.
+    // observed.searchParams comes from Object.fromEntries(url.searchParams):
+    // with a repeated key (`?tag=a&tag=b`) only the last value survives. The
+    // subset comparison checks that single value without being able to
+    // detect the loss.
     !matchesSubset(observed.searchParams, spec.searchParams, spec.exact)
   ) {
     return false

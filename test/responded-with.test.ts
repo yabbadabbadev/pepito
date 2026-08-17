@@ -4,7 +4,7 @@ import { stripAnsi } from './ansi'
 import { worker } from './setup'
 import { ProductListMother } from './mothers/product-list-mother'
 
-test('casa por status a secas', async () => {
+test('matches by status alone', async () => {
   worker.use(
     http.get('/api/rota', () => HttpResponse.json(null, { status: 500 })),
   )
@@ -13,7 +13,7 @@ test('casa por status a secas', async () => {
   await expect(get('/api/rota')).toHaveRespondedWith(500)
 })
 
-test('casa por status y subconjunto del body de la respuesta', async () => {
+test('matches by status and a subset of the response body', async () => {
   await fetch('/api/products')
 
   await expect(get('/api/products')).toHaveRespondedWith({
@@ -22,7 +22,7 @@ test('casa por status y subconjunto del body de la respuesta', async () => {
   })
 })
 
-test('casa por subconjunto cuando el body de la respuesta es un objeto, no un array', async () => {
+test('matches by subset when the response body is an object, not an array', async () => {
   worker.use(
     http.get('/api/producto/1', () =>
       HttpResponse.json({
@@ -41,7 +41,7 @@ test('casa por subconjunto cuando el body de la respuesta es un objeto, no un ar
   })
 })
 
-test('el mensaje de .not.toHaveRespondedWith() lleva el hint negado, no el positivo', async () => {
+test('the .not.toHaveRespondedWith() message carries the negated hint, not the positive one', async () => {
   await fetch('/api/products')
 
   let failure = ''
@@ -55,8 +55,8 @@ test('el mensaje de .not.toHaveRespondedWith() lleva el hint negado, no el posit
   expect(failure).toContain('Not expected:')
 })
 
-test('una respuesta real vía passthrough NO cuenta: exige interceptada', async () => {
-  await fetch('/api/passthrough') // responde la red real (404 de Vite)
+test('a real response via passthrough does NOT count: it requires an intercepted one', async () => {
+  await fetch('/api/passthrough') // the real network responds (Vite's 404)
 
   let failure = ''
   try {
@@ -67,7 +67,7 @@ test('una respuesta real vía passthrough NO cuenta: exige interceptada', async 
   expect(failure).toContain('toHaveRespondedWith')
 })
 
-test('el status equivocado enseña el diff de la respuesta', async () => {
+test('the wrong status shows the response diff', async () => {
   await fetch('/api/products')
 
   let failure = ''
@@ -79,16 +79,17 @@ test('el status equivocado enseña el diff de la respuesta', async () => {
   expect(failure).toContain('- Expected')
   expect(failure).toContain('201')
   expect(failure).toContain('200')
-  // La forma corta no lleva `body`: el diff (todo lo que sigue a "- Expected")
-  // compara solo `status` a los dos lados, sin un `body: undefined` que no
-  // viene de ningún lado real. La línea "Esperaba" queda fuera del recorte
-  // porque ahí sí aparece el `body` del RequestSpec de la petición —asunto
-  // ajeno a esta tarea, compartido con el resto de matchers.
+  // The short form doesn't carry `body`: the diff (everything after
+  // "- Expected") compares only `status` on both sides, with no
+  // `body: undefined` coming from anywhere real. The "Expected" line falls
+  // outside the slice because that's where the RequestSpec's `body` from
+  // the request does appear — a separate matter, unrelated to this task,
+  // shared with the rest of the matchers.
   const diffSection = failure.slice(failure.indexOf('- Expected'))
   expect(diffSection).not.toContain('body')
 })
 
-test('un body anidado que no casa enseña qué campo cambió, no dos bloques sueltos', async () => {
+test('a nested body that does not match shows which field changed, not two unrelated blocks', async () => {
   await fetch('/api/products')
 
   let failure = ''
@@ -103,10 +104,10 @@ test('un body anidado que no casa enseña qué campo cambió, no dos bloques sue
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }
-  // Ambos nombres de producto tienen que aparecer: el diff compara valor
-  // contra valor en el mismo campo (`body` a los dos lados), no dos bloques
-  // sin relación (`body` desaparece, `responseBody` aparece).
-  expect(failure).toContain('Pan de pueblo') // el valor real, sin tocar
-  expect(failure).toContain('Pan integral') // el valor esperado, que no casó
+  // Both product names have to appear: the diff compares value against
+  // value in the same field (`body` on both sides), not two unrelated
+  // blocks (`body` disappears, `responseBody` appears).
+  expect(failure).toContain('Pan de pueblo') // the real value, untouched
+  expect(failure).toContain('Pan integral') // the expected value, which didn't match
   expect(failure).not.toContain('responseBody')
 })

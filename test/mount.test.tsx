@@ -1,38 +1,39 @@
 import { http, HttpResponse } from 'msw'
 import { get, mount } from '../src'
-// Importado solo por su efecto secundario: setupNetwork() se llama al cargar
-// este módulo. Ningún test de este fichero necesita el `worker` en sí —
-// `mount({ network: [...] })` ya llama a worker.use() por dentro — pero sin
-// este import el guard de mount('mount') seguiría viendo el singleton vacío.
+// Imported only for its side effect: setupNetwork() runs when this module
+// loads. No test in this file needs the `worker` itself —
+// `mount({ network: [...] })` already calls worker.use() internally — but
+// without this import mount('mount')'s guard would still see the singleton
+// empty.
 import './setup'
 import { RoutedApp } from './routed-app'
 import { ProductListMother } from './mothers/product-list-mother'
 
 const initialPath = location.pathname
 
-test('monta a secas y devuelve el screen de vitest-browser-react', async () => {
+test('mounts plain and returns the vitest-browser-react screen', async () => {
   const screen = await mount(<RoutedApp />)
 
-  await expect.element(screen.getByText('Página de inicio')).toBeVisible()
+  await expect.element(screen.getByText('Home page')).toBeVisible()
 })
 
-test('CRITERIO DE ACEPTACIÓN: monta en una URI completa que el router lee', async () => {
+test('ACCEPTANCE CRITERION: mounts on a full URI that the router reads', async () => {
   const screen = await mount(<RoutedApp />, {
-    path: '/products?filtro=pan#detalle',
+    path: '/products?filter=bread#detail',
   })
 
-  await expect.element(screen.getByText('filtro: pan')).toBeVisible()
-  await expect.element(screen.getByText('hash: #detalle')).toBeVisible()
+  await expect.element(screen.getByText('filter: bread')).toBeVisible()
+  await expect.element(screen.getByText('hash: #detail')).toBeVisible()
 })
 
-test('CRITERIO DE ACEPTACIÓN: la URL se restaura — este test NO hereda la ruta anterior', async () => {
+test('ACCEPTANCE CRITERION: the URL is restored — this test does NOT inherit the previous route', async () => {
   expect(location.pathname).toBe(initialPath)
 
   const screen = await mount(<RoutedApp />)
-  await expect.element(screen.getByText('Página de inicio')).toBeVisible()
+  await expect.element(screen.getByText('Home page')).toBeVisible()
 })
 
-test('los handlers de network tienen prioridad sobre los de la suite', async () => {
+test('network handlers take priority over the suite handlers', async () => {
   await mount(<RoutedApp />, {
     network: [
       http.get('/api/products', () =>
@@ -46,13 +47,13 @@ test('los handlers de network tienen prioridad sobre los de la suite', async () 
   await expect(get('/api/products')).toHaveBeenIntercepted()
 })
 
-test('un path que no empieza por / falla con instrucción, no con SecurityError', async () => {
+test('a path that does not start with / fails with an instruction, not a SecurityError', async () => {
   await expect(
-    mount(<RoutedApp />, { path: 'https://otra.web/products' }),
+    mount(<RoutedApp />, { path: 'https://another.web/products' }),
   ).rejects.toThrow(/same-origin.*starts with '\/'/s)
 })
 
-test('un path protocol-relative pasa el prefijo "/" pero no es same-origin', async () => {
+test('a protocol-relative path passes the "/" prefix but is not same-origin', async () => {
   await expect(
     mount(<RoutedApp />, { path: '//evil.com/products' }),
   ).rejects.toThrow(/same-origin.*starts with '\/'/s)

@@ -1,14 +1,14 @@
 /**
- * Cómo se compara la petición esperada contra la observada. `searchParams` y
- * `body` casan por subconjunto de claves de primer nivel con igualdad
- * profunda por clave — `{ body: { productName: 'Leche' } }` casa aunque la
- * petición real lleve además `id` o `createdAt` — salvo `exact: true`, que
- * exige igualdad estricta de todo el objeto.
+ * How the expected request is compared against the observed one.
+ * `searchParams` and `body` match by subset of top-level keys with deep
+ * equality per key — `{ body: { productName: 'Milk' } }` matches even if
+ * the real request also carries `id` or `createdAt` — unless `exact: true`,
+ * which requires strict equality of the whole object.
  *
- * Una clave repetida en la query real (`?tag=a&tag=b`) se colapsa a un único
- * valor —el último— antes de comparar, porque el registro construye
- * `searchParams` con `Object.fromEntries`: si tu aplicación depende de que una
- * clave aparezca más de una vez, esta comparación no lo detecta.
+ * A repeated key in the real query (`?tag=a&tag=b`) collapses to a single
+ * value — the last one — before comparing, because the registry builds
+ * `searchParams` with `Object.fromEntries`: if your application relies on a
+ * key appearing more than once, this comparison won't detect it.
  */
 export interface RequestSpecOptions {
   searchParams?: Record<string, string>
@@ -17,15 +17,15 @@ export interface RequestSpecOptions {
 }
 
 /**
- * Describe la petición que un matcher de red busca en el tráfico observado.
- * Se construye con `request()` o alguno de sus atajos (`get`, `post`, `put`,
- * `patch`, `del`, `query`); no hace falta construirlo a mano.
+ * Describes the request a network matcher looks for in the observed
+ * traffic. Built with `request()` or one of its shortcuts (`get`, `post`,
+ * `put`, `patch`, `del`, `query`); there's no need to build it by hand.
  *
- * El matching ignora el `origin`: `get('/api/x')` casa tanto contra una
- * petición same-origin a `/api/x` como contra `https://otro.host/api/x`, si
- * algún handler responde ahí. El registro de tráfico sí guarda el `origin` de
- * cada petición — no se usa todavía, pero deja sitio para una aserción por
- * host el día que dos hosts compartan un mismo path.
+ * Matching ignores `origin`: `get('/api/x')` matches both a same-origin
+ * request to `/api/x` and one to `https://other.host/api/x`, if some
+ * handler responds there. The traffic registry does keep the `origin` of
+ * each request — not used yet, but it leaves room for an assertion by host
+ * the day two hosts share the same path.
  */
 export interface RequestSpec extends RequestSpecOptions {
   method: string
@@ -33,10 +33,10 @@ export interface RequestSpec extends RequestSpecOptions {
 }
 
 /**
- * Escotilla para cualquier método HTTP, incluidos los que MSW 2.15 todavía no
- * expone como helper propio (`QUERY`). Los atajos (`get`, `post`, …) son
- * `request(métodoFijo, ...)`; para el resto de métodos, o para dejar el
- * método explícito en el propio test, se usa directamente.
+ * Escape hatch for any HTTP method, including ones MSW 2.15 doesn't yet
+ * expose as its own helper (`QUERY`). The shortcuts (`get`, `post`, …) are
+ * `request(fixedMethod, ...)`; for any other method, or to leave the method
+ * explicit in the test itself, use this directly.
  *
  * @example
  * ```ts
@@ -54,13 +54,13 @@ export function request(
 }
 
 /**
- * Describe una petición `GET` esperada.
+ * Describes an expected `GET` request.
  *
  * @example
  * ```ts
  * import { get } from '@yabbadabbadev/pepito'
  *
- * await expect(get('/api/products', { searchParams: { filtro: 'pan' } })).toHaveBeenRequested()
+ * await expect(get('/api/products', { searchParams: { filter: 'bread' } })).toHaveBeenRequested()
  * ```
  */
 export const get: (
@@ -68,32 +68,33 @@ export const get: (
   options?: RequestSpecOptions,
 ) => RequestSpec = (path, options) => request('GET', path, options)
 
-/** Describe una petición `POST` esperada; misma forma que {@link get}. */
+/** Describes an expected `POST` request; same shape as {@link get}. */
 export const post: typeof get = (path, options) =>
   request('POST', path, options)
 
-/** Describe una petición `PUT` esperada; misma forma que {@link get}. */
+/** Describes an expected `PUT` request; same shape as {@link get}. */
 export const put: typeof get = (path, options) => request('PUT', path, options)
 
-/** Describe una petición `PATCH` esperada; misma forma que {@link get}. */
+/** Describes an expected `PATCH` request; same shape as {@link get}. */
 export const patch: typeof get = (path, options) =>
   request('PATCH', path, options)
 
 /**
- * Describe una petición `DELETE` esperada; misma forma que {@link get}.
- * Se llama `del` porque `delete` es palabra reservada.
+ * Describes an expected `DELETE` request; same shape as {@link get}.
+ * Named `del` because `delete` is a reserved word.
  */
 export const del: typeof get = (path, options) =>
   request('DELETE', path, options)
 
 /**
- * Describe una petición `QUERY` esperada — el método que introduce el spec de
- * este paquete, entre `GET` y `POST`. La opción relevante suele ser
- * `searchParams`, no `body`: se llama `searchParams` y no `query` a propósito,
- * porque `query` ya es el nombre de este método HTTP en la misma API. MSW
- * 2.15 no expone `query` como helper de handler todavía — se declara con
- * `http.all` y se filtra por método — pero el registro de tráfico de pepito
- * lo observa igual, porque lee `request.method` como cadena.
+ * Describes an expected `QUERY` request — the method this package's spec
+ * introduces, between `GET` and `POST`. The relevant option is usually
+ * `searchParams`, not `body`: it's called `searchParams` and not `query` on
+ * purpose, because `query` is already the name of this HTTP method in the
+ * same API. MSW 2.15 doesn't expose `query` as a handler helper yet — it's
+ * declared with `http.all` and filtered by method — but pepito's traffic
+ * registry observes it just the same, because it reads `request.method` as
+ * a plain string.
  */
 export const query: typeof get = (path, options) =>
   request('QUERY', path, options)

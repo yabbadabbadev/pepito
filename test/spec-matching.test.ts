@@ -18,13 +18,13 @@ const observedWith = (partial: Partial<ResolvedRequest>): ResolvedRequest => ({
   ...partial,
 })
 
-test('casa por método y path', () => {
+test('matches by method and path', () => {
   expect(matchesSpec(observedWith({}), get('/api/products'))).toBe(true)
   expect(matchesSpec(observedWith({}), post('/api/products'))).toBe(false)
   expect(matchesSpec(observedWith({}), get('/api/otra'))).toBe(false)
 })
 
-test('el body casa por subconjunto: claves extra en lo observado no molestan', () => {
+test('the body matches by subset: extra keys in the observed one do not matter', () => {
   const observed = observedWith({
     method: 'POST',
     body: { product_name: 'Leche', id: 7, created_at: 'hoy' },
@@ -38,7 +38,7 @@ test('el body casa por subconjunto: claves extra en lo observado no molestan', (
   ).toBe(true)
 })
 
-test('con exact, una clave extra rompe el matching', () => {
+test('with exact, an extra key breaks the match', () => {
   const observed = observedWith({ method: 'POST', body: { a: 1, b: 2 } })
 
   expect(
@@ -49,7 +49,7 @@ test('con exact, una clave extra rompe el matching', () => {
   ).toBe(false)
 })
 
-test('con exact, una clave que falta en lo observado también rompe el matching', () => {
+test('with exact, a key missing from the observed one also breaks the match', () => {
   const observed = observedWith({ method: 'POST', body: { a: 1 } })
 
   expect(
@@ -60,7 +60,7 @@ test('con exact, una clave que falta en lo observado también rompe el matching'
   ).toBe(false)
 })
 
-test('searchParams casa por subconjunto y exact exige igualdad', () => {
+test('searchParams matches by subset and exact requires equality', () => {
   const observed = observedWith({
     searchParams: { filtro: 'pan', pagina: '2' },
   })
@@ -79,7 +79,7 @@ test('searchParams casa por subconjunto y exact exige igualdad', () => {
   ).toBe(false)
 })
 
-test('la igualdad por clave es profunda, no de referencia', () => {
+test('equality per key is deep, not by reference', () => {
   const observed = observedWith({
     method: 'POST',
     body: { detalle: { unidades: 3 } },
@@ -93,7 +93,7 @@ test('la igualdad por clave es profunda, no de referencia', () => {
   ).toBe(true)
 })
 
-test('un body que no es objeto plano casa por igualdad profunda directa', () => {
+test('a body that is not a plain object matches by direct deep equality', () => {
   const observed = observedWith({ method: 'POST', body: [1, 2, 3] })
 
   expect(
@@ -104,7 +104,7 @@ test('un body que no es objeto plano casa por igualdad profunda directa', () => 
   )
 })
 
-test('null no se trata como objeto plano aunque typeof lo diga', () => {
+test('null is not treated as a plain object even though typeof says so', () => {
   const observed = observedWith({ method: 'POST', body: null })
 
   expect(matchesSpec(observed, post('/api/products', { body: null }))).toBe(
@@ -115,7 +115,7 @@ test('null no se trata como objeto plano aunque typeof lo diga', () => {
   )
 })
 
-test('un valor de tipo distinto anidado no casa, aunque ninguno sea null', () => {
+test('a nested value of a different type does not match, even when neither is null', () => {
   const observed = observedWith({
     method: 'POST',
     body: { detalle: 'sin estructurar' },
@@ -129,7 +129,7 @@ test('un valor de tipo distinto anidado no casa, aunque ninguno sea null', () =>
   ).toBe(false)
 })
 
-test('un valor anidado null no casa contra un objeto anidado', () => {
+test('a nested null value does not match against a nested object', () => {
   const observed = observedWith({
     method: 'POST',
     body: { detalle: { unidades: 3 } },
@@ -140,7 +140,7 @@ test('un valor anidado null no casa contra un objeto anidado', () => {
   ).toBe(false)
 })
 
-test('un array anidado no casa contra un objeto anidado, aunque ambos sean "object"', () => {
+test('a nested array does not match against a nested object, even though both are "object"', () => {
   const observed = observedWith({
     method: 'POST',
     body: { detalle: [1, 2] },
@@ -154,7 +154,7 @@ test('un array anidado no casa contra un objeto anidado, aunque ambos sean "obje
   ).toBe(false)
 })
 
-test('sin body ni searchParams en el spec, no se comprueban', () => {
+test('with no body or searchParams in the spec, neither is checked', () => {
   const observed = observedWith({
     method: 'POST',
     body: { cualquiera: true },

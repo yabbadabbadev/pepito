@@ -9,8 +9,8 @@ import {
 
 const worker = setupWorker(
   http.post('/api/products', async ({ request }) => {
-    // El handler CONSUME el body: la regresión del gotcha 1 exige que el
-    // registro lo haya clonado antes.
+    // The handler CONSUMES the body: the gotcha 1 regression requires the
+    // registry to have cloned it beforehand.
     const payload = await request.json()
     return HttpResponse.json(payload, { status: 201 })
   }),
@@ -23,7 +23,7 @@ beforeAll(async () => {
 })
 afterEach(() => resetTraffic())
 
-test('REGRESIÓN gotcha 1: el body de un POST es legible aunque el handler lo consuma', async () => {
+test('REGRESSION gotcha 1: a POST body is readable even if the handler consumes it', async () => {
   await fetch('/api/products', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -35,7 +35,7 @@ test('REGRESIÓN gotcha 1: el body de un POST es legible aunque el handler lo co
   expect(entry?.body).toEqual({ product_name: 'Leche' })
 })
 
-test('una petición mockeada acaba matched, mocked y con status y body de respuesta', async () => {
+test('a mocked request ends up matched, mocked and with a response status and body', async () => {
   await fetch('/api/products', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -51,7 +51,7 @@ test('una petición mockeada acaba matched, mocked y con status y body de respue
   expect(entry?.responseBody).toEqual({ product_name: 'Pan' })
 })
 
-test('REGRESIÓN gotcha 2: passthrough queda matched pero NO mocked', async () => {
+test('REGRESSION gotcha 2: passthrough ends up matched but NOT mocked', async () => {
   await fetch('/api/passthrough')
   await waitForNetworkIdle()
 
@@ -62,7 +62,7 @@ test('REGRESIÓN gotcha 2: passthrough queda matched pero NO mocked', async () =
   expect(entry?.bypassed).toBe(true)
 })
 
-test('una petición sin handler queda unhandled y bypassed', async () => {
+test('a request without a handler ends up unhandled and bypassed', async () => {
   await fetch('/api/nadie-la-espera')
   await waitForNetworkIdle()
 
@@ -72,7 +72,7 @@ test('una petición sin handler queda unhandled y bypassed', async () => {
   expect(entry?.bypassed).toBe(true)
 })
 
-test('una respuesta mockeada sin body de verdad no rompe el registro: responseBody queda undefined', async () => {
+test('a mocked response with no real body does not break the registry: responseBody stays undefined', async () => {
   worker.use(
     http.get('/api/sin-cuerpo', () => new HttpResponse(null, { status: 204 })),
   )

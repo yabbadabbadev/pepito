@@ -1,13 +1,13 @@
-// Los mensajes de fallo de los matchers de red llevan color (ver
+// Network matcher failure messages carry color (see
 // docs/knowledge/salida-coloreada-matchers.md): `this.utils.matcherHint`
-// intercala el código ANSI justo entre palabras que un test necesita buscar
-// enteras — por ejemplo entre "not" y el nombre del matcher en el hint
-// negado. Sin quitarlo antes, una aserción de contenido dependería de dónde
-// exactamente corta el color, no de lo que el mensaje dice.
+// interleaves the ANSI code right between words a test needs to search for
+// whole — for example between "not" and the matcher name in the negated
+// hint. Without stripping it first, a content assertion would depend on
+// exactly where the color cuts, not on what the message says.
 const ESC = String.fromCharCode(27)
 const ANSI_ESCAPE_SEQUENCE = new RegExp(`${ESC}\\[[0-9;]*m`, 'g')
 
-/** Quita los códigos ANSI de color de un mensaje de fallo, para buscar texto que los atraviesa. */
+/** Strips ANSI color codes from a failure message, to search for text that spans across them. */
 export function stripAnsi(text: string): string {
   return text.replace(ANSI_ESCAPE_SEQUENCE, '')
 }
