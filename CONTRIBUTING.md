@@ -100,61 +100,115 @@ contribute to it, not just that it compiles. What a PR has to meet:
 
 ## Publishing a version
 
-Publishing runs in CI (`.github/workflows/publish.yml`), not by hand: the
-workflow repeats the same verification as the PR (tests, typecheck, build)
-against the exact ref being published. It publishes WITHOUT `--provenance`
-for now: the registry rejects provenance from private source repositories
-(measured on the v0.1.0 publish: E422 "Only public source repositories are
-supported"), so the flag — and the `id-token: write` permission it needs —
-comes back when this repo goes public (see the ROADMAP).
+Publishing follows from **merging the release PR**. There is no manual tag
+step and no token: `.github/workflows/release.yml` keeps a release PR open
+on `main` (via `release-please`), and merging it is what creates the tag and
+triggers the publish job in the same workflow file. Authentication is OIDC
+against a trusted publisher registered on npmjs.com — see
+`docs/trusted-publishing.md` for why that replaces a stored credential and
+what npm matches on.
+
+Commits on `main` must follow [Conventional Commits](https://www.conventionalcommits.org/),
+because that's what release-please reads to decide whether a release PR is
+needed at all: `feat:` and `fix:` commits produce one; `docs:`, `ci:`,
+`chore:` and `refactor:` commits do not touch the release PR.
+
+### The documentation-only release
+
+When a release is wanted and no `feat:` or `fix:` commit is behind it — a
+CHANGELOG correction, a docs fix — force it with a `Release-As: X.Y.Z`
+footer on a commit:
+
+```
+docs: fix a broken link in the README
+
+Release-As: 0.1.1
+```
+
+Without that footer, release-please opens no release PR for a `docs:`-only
+change, and the pipeline looks broken while it's actually behaving exactly
+as documented.
+
+A squash merge can silently drop the footer: GitHub's squash commit message
+defaults to the PR title plus a summary of commit subjects, and the
+`Release-As:` trailer only survives if it was in the PR body or is added by
+hand while squashing. release-please reads `main`'s commits, not the PR's —
+if the footer didn't make it into the squash commit, it never saw it. After
+merging, verify it landed:
+
+```bash
+git log -1 --format=%B origin/main | grep Release-As
+```
+
+If that comes back empty, supply the footer through the squash commit body
+next time (edit the commit message box GitHub shows before confirming the
+squash), rather than assuming the PR body was enough.
+
+### Editing the CHANGELOG
+
+The release PR itself is the editing point: release-please generates
+CHANGELOG entries from commit subjects, and prose written by hand almost
+always reads better than a concatenation of commit messages. Edit the
+CHANGELOG in the release PR, before merging it — once the release exists,
+editing the CHANGELOG is a separate follow-up PR, not a rewrite of history.
 
 ### Preparation (once, from any machine)
 
-1. On npmjs.com, create a granular token: **Read and write**, scoped to
-   `@yabbadabbadev/pepito` or the whole scope if more packages are coming,
-   and type **automation** — that's the type that skips the interactive
-   OTP, without which the CI job would sit blocked waiting for a 2FA no one
-   can type in.
-2. Save it as a secret:
+1. Enable Settings → Actions → General → "Allow GitHub Actions to create and
+   approve pull requests" on this repository. Without it, release-please's
+   `GITHUB_TOKEN` cannot open the release PR at all, and the first sign of
+   the problem is silence — no PR appears, and nothing in the workflow run
+   says why.
+2. Create the `npm-publish` GitHub Environment on this repository, **with a
+   required reviewer configured on it**. This is a precondition the workflow
+   depends on, not something the workflow enforces: if the environment does
+   not exist, GitHub auto-creates it unprotected the first time it's
+   referenced, and the publish job then runs with no human gate at all. The
+   publish job targets this environment so that, once the reviewer rule is
+   actually in place, an actual publish waits for a human to approve it even
+   though the tag was created automatically by merging the release PR.
+3. On npmjs.com, register a trusted publisher for `@yabbadabbadev/pepito`
+   with the four exact values: organization `yabbadabbadev`, repository
+   `pepito`, workflow filename `release.yml`, environment `npm-publish`.
+   All four fields are case-sensitive.
 
-   ```bash
-   gh secret set NPM_TOKEN --repo yabbadabbadev/pepito
-   ```
+There is no token to create and no secret to store — `gh secret set
+NPM_TOKEN` is no longer part of this repo's setup.
 
-   Or as an organization secret from the GitHub UI if it's going to serve
-   more packages in the scope, not just this one.
+### Emergency publish, until OIDC is proven
 
-### Publishing
-
-1. Bump the version in `package.json` and add the matching entry to the
-   CHANGELOG, through a normal PR — the usual gates (tests, typecheck,
-   coverage, lint) run on their own.
-2. After the merge, create and push the tag:
-
-   ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
-
-   The workflow fires on the tag, repeats the verification (tests,
-   typecheck, build), checks that the tag matches the `package.json`
-   version, and publishes.
-
-Alternative without a tag: trigger the `publish` workflow by hand from the
-Actions UI (`workflow_dispatch`) — it publishes whatever's in
-`package.json` on the ref you choose, without the tag check.
-
-### Manual (alternative without CI)
-
-Only if Actions is unavailable. From a clean checkout:
+`workflow_dispatch` and the manual-publish path are gone along with
+`publish.yml`: the only documented way to publish is the automated OIDC
+flow above. Until one real release has gone through it successfully, there
+is a window with no fallback documented anywhere else, so if OIDC is
+rejected (misconfigured trusted publisher, npm-side outage, or similar),
+publish by hand from a clean checkout:
 
 ```bash
+git clone https://github.com/yabbadabbadev/pepito.git
+cd pepito
 npm ci
-npm run setup && npm test && npm run typecheck && npm run build
-npm pack --dry-run    # audits the tarball: dist/, README.md, CHANGELOG.md, LICENSE, package.json
-npm login             # asks for 2FA/OTP if the account has it enabled
-npm publish           # public access is already in publishConfig, no need for --access
-npm view @yabbadabbadev/pepito   # post-publish check against the registry, not the local copy
+npx playwright install --with-deps chromium
+npm test
+npm run typecheck
+npm run build
+npm login   # now yields a two-hour session, not a stored token
+npm publish
+```
+
+Delete the checkout afterward — the point of trusted publishing is that
+nothing long-lived is left behind, and a manual publish shouldn't
+reintroduce that.
+
+### Setup for a fresh clone
+
+The repository-level git identity needs setting explicitly, since the
+global git config on a work machine may carry a corporate address that
+shouldn't appear in this repo's commit history:
+
+```bash
+git config --local user.email alex@yabbadabba.dev
+git config --local user.name "Alex Fuentes"
 ```
 
 ### Post-publication
