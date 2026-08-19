@@ -2,11 +2,10 @@
 
 ## Supported versions
 
-`@yabbadabbadev/pepito` is at `0.1.0` — its first and only release. There is
-no older major or minor line to maintain, so the only version that receives
-security attention is the latest one published to npm. Once a `1.x` line
-exists this section will be revisited; until then, there is nothing to list
-a support matrix for.
+The only version that receives security attention is the latest one
+published to npm. There is no older major or minor line being maintained in
+parallel, so there is nothing to list a support matrix for yet — that will
+be worth writing once more than one line of the package exists.
 
 ## Reporting a vulnerability
 
