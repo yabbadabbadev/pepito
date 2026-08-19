@@ -11,8 +11,17 @@ release pipeline into a single `release.yml` (release-please plus an
 OIDC-authenticated publish job) and retires the token — all while the
 repository stays private, because OIDC authenticates from private repos and
 only provenance needs a public one. Phase 2 audits the repository against
-eight dimensions, rewrites commit authorship, makes the repository public, and
-proves provenance appeared.
+nine dimensions, rewrites commit authorship, publishes that rewritten history
+as a **fresh repository**, makes it public, and only then runs the phase 1
+cutover once against the final repository.
+
+**Revised 2026-08-19.** Phase 1's code is merged and live; phase 1's cutover
+(Task 4) was never executed. Phase 2's original remediation — rewrite `main`,
+force-push here, flip this repository public — is invalidated by a measured
+finding: GitHub retains `refs/pull/1/head` through `refs/pull/4/head`, they
+carry the corporate authorship, and they cannot be rewritten from the client.
+See the spec's Findings section and the revised execution order below before
+running anything numbered 4 or higher.
 
 **Tech Stack:** GitHub Actions, `googleapis/release-please-action` v5, npm
 trusted publishing (OIDC), `gitleaks`, `git-filter-repo`, `gh` CLI.
@@ -47,24 +56,26 @@ trusted publishing (OIDC), `gitleaks`, `git-filter-repo`, `gh` CLI.
 
 ## File structure
 
-| File                                          | Responsibility                                           | Task |
-| --------------------------------------------- | -------------------------------------------------------- | ---- |
-| `release-please-config.json`                  | How release-please versions this package                 | 1    |
-| `.release-please-manifest.json`               | The version release-please believes is current           | 1    |
-| `.github/workflows/release.yml`               | The entire release path: release PR, tag, OIDC publish   | 2    |
-| `.github/workflows/publish.yml`               | **Deleted** — superseded by `release.yml`                | 2    |
-| `docs/trusted-publishing.md`                  | Teaching document: why OIDC removes the secret           | 3    |
-| `.claude/docs/references/publishing-trust.md` | Agent-facing findings, labeled                           | 3    |
-| `CONTRIBUTING.md`                             | Release runbook rewritten around release-please and OIDC | 3    |
-| `CLAUDE.md`, `ROADMAP.md`                     | Status, Releasing, closed and dropped deferrals          | 3, 8 |
-| `docs/security-audit-2026-08-19.md`           | Audit report, eight dimensions, redacted                 | 5, 7 |
-| `SECURITY.md`                                 | Vulnerability reporting policy                           | 7    |
+| File                                          | Responsibility                                           | Task     |
+| --------------------------------------------- | -------------------------------------------------------- | -------- |
+| `release-please-config.json`                  | How release-please versions this package                 | 1        |
+| `.release-please-manifest.json`               | The version release-please believes is current           | 1        |
+| `.github/workflows/release.yml`               | The entire release path: release PR, tag, OIDC publish   | 2        |
+| `.github/workflows/publish.yml`               | **Deleted** — superseded by `release.yml`                | 2        |
+| `docs/trusted-publishing.md`                  | Teaching document: why OIDC removes the secret           | 3        |
+| `.claude/docs/references/publishing-trust.md` | Agent-facing findings, labeled                           | 3        |
+| `CONTRIBUTING.md`                             | Release runbook rewritten around release-please and OIDC | 3        |
+| `CLAUDE.md`, `ROADMAP.md`                     | Status, Releasing, closed and dropped deferrals          | 3, 8     |
+| `docs/security-audit-2026-08-19.md`           | Audit report, nine dimensions, redacted                  | 5, 5R, 7 |
+| `SECURITY.md`                                 | Vulnerability reporting policy                           | 7        |
 
 A note on testing in this plan: no task touches `src/`, so there is no
 red-green cycle to run. The equivalent discipline here is that **every task
 states the command that proves it and the output that counts as proof**, and
 the two tasks whose deliverable is a live pipeline (4 and 8) are proven by a
-real publish, not by reading YAML.
+real publish, not by reading YAML. The two tasks whose deliverable is a
+repository (6 and 6B) are proven by the tree SHA reproducing from a fresh
+clone, not by reading the push output.
 
 ---
 
@@ -483,17 +494,60 @@ workflow works.
 
 ---
 
-### Task 4: Phase 1 cutover (human-gated)
+## Revised execution order for Tasks 4-8 (2026-08-19)
+
+Task numbers below are unchanged, so that every cross-reference in the spec
+and in the ledger still resolves. What changed is the **order they run in**,
+and two tasks were added. Run them in exactly this sequence:
+
+| Order | Task                                | What it does                                                                                          | Must not start before              |
+| ----- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 1     | **Task 5R** (new)                   | Redoes the under-covered audit dimensions and adds dimension 9                                        | —                                  |
+| 2     | **Task 6** (revised destination)    | Rewrites `main`'s authorship locally; pushes nothing                                                  | Task 5R passing on every dimension |
+| 3     | **Task 6B** (new)                   | Archives this repository privately; creates the new private `pepito` and pushes the rewritten history | Task 6's tree-SHA check matching   |
+| 4     | **Task 7** (revised target)         | The human flips the new repository public; hardening and rulesets                                     | Task 6B verified                   |
+| 5     | **Task 4** (resequenced, was first) | The cutover: `npm-publish` environment, npm trusted publisher, the `0.1.1` release                    | Task 7's public flip               |
+| 6     | **Task 8** (revised)                | Proves provenance on `0.1.1` and closes the documentation                                             | Task 4's publish being green       |
+
+Why Task 4 moved to the end: the same reason release-please came before the
+trusted publisher inside phase 1 — **do not bind the registry to a name that
+is about to move.** No trusted publisher exists yet, so there is nothing to
+re-point; that risk evaporates rather than being managed.
+
+What this ordering removes: publishing from an already-public repository means
+**`0.1.1` carries provenance on its first release.** The separate `0.1.2`
+validation release is gone from Task 8 — it would prove nothing `0.1.1` does
+not, and npm gets configured once instead of twice.
+
+**Standing constraint, no expiry:** `pepito-archive` must never be made
+public. It retains the pull refs carrying a corporate email address and one
+blob with an absolute home path; those refs are immutable from the client, so
+visibility is the only control that exists. Any later task, audit or
+maintainer inheriting this repository is bound by this.
+
+---
+
+### Task 4: The cutover, in the final repository (human-gated)
+
+**RESEQUENCED 2026-08-19: this task now runs LAST but one, after Task 7 has
+made the new repository public. Do not start it before that.** Everything it
+configures — the environment, the trusted publisher, the release — is
+configured **once, in the new repository**, so that no npm-side binding ever
+names a repository that is about to move. Its own deliverable is therefore
+also the first provenance-carrying release, which is why Task 8 no longer
+needs a second one.
 
 **Files:** none. This task changes state on GitHub and npmjs.com, and its
-deliverable is a published `0.1.1` with no secret behind it.
+deliverable is a published `0.1.1` with no secret behind it and provenance
+attached.
 
 **Interfaces:**
 
-- Consumes: the merged workflow from Tasks 1–3, and the exact strings
-  `release.yml` and `npm-publish`.
-- Produces: a working OIDC publish path, which Task 8 reuses unchanged to
-  produce the first provenance-carrying release.
+- Consumes: the workflow from Tasks 1–3 (already merged and carried into the
+  new repository by Task 6B), the public repository from Task 7, and the exact
+  strings `release.yml` and `npm-publish`.
+- Produces: a working OIDC publish path **and** the first provenance-carrying
+  release, which Task 8 verifies from the registry.
 
 **Stop and ask the human at every step below. Do not perform the npm-side or
 visibility-side actions on their behalf.**
@@ -505,21 +559,49 @@ to create and approve pull requests" must be enabled. Without it,
 release-please's `GITHUB_TOKEN` cannot open the release PR, and the failure
 mode is silence: no PR appears anywhere, and nothing in the run log says why.
 
-- [ ] **Step 1: Merge the PR from Task 3**
+**Open item, blocking, added 2026-08-19:** this setting also exists one level
+up, at `github.com/organizations/yabbadabbadev/settings/actions` → Workflow
+permissions → "Allow GitHub Actions to create and approve pull requests", and
+it is currently **disabled** there. An organization-level "disabled" wins over
+a repository-level "enabled" — the repository API cannot override it, and
+attempting the equivalent PATCH on the repository returns HTTP 409 with `The
+organization does not allow GitHub Actions to create or approve pull
+requests`. Until a human enables it at the organization, release-please
+cannot open a release PR regardless of what the repository setting says. Ask
+the human to check and, if needed, flip the organization-level setting before
+relying on this step's repository-level check.
+
+**Cleared 2026-08-19:** the human enabled it at the organization, and the
+repository-level flag then had to be set as well and was. The organization
+setting carries over to the new repository; the repository-level one does not,
+because the new repository is new. Re-measure it there rather than assuming:
 
 ```bash
-gh pr merge --squash --delete-branch
+gh api repos/yabbadabbadev/pepito/actions/permissions/workflow
 ```
 
-The push to `main` runs `release.yml` for the first time. Expect the release
-job to succeed and the publish job to be **skipped** — nothing on `main` is a
-`feat:` or `fix:`, so `release_created` is false. That skip is the correct
-outcome, not a failure.
+Expected:
+`{"default_workflow_permissions":"read","can_approve_pull_request_reviews":true}`.
+
+- [ ] **Step 1: DONE ALREADY — the phase 1 code is merged, and its first run
+      behaved as designed**
+
+Kept as a record rather than as work. The PR from Task 3 was squash-merged and
+the push to `main` ran `release.yml` for the first time: the release job was
+green and the publish job was **skipped**, because the squash subject was
+`ci:` and nothing was releasable. That skip was the predicted outcome, and it
+is the only exercise `release.yml` has had.
+
+Nothing to run here. What carries into the new repository is the merged
+workflow, brought over by Task 6B's push of the rewritten `main`. Confirm it
+arrived before continuing:
 
 ```bash
-gh run list --workflow=release.yml --limit 1
-gh run view --log | tail -40
+gh api repos/yabbadabbadev/pepito/contents/.github/workflows/release.yml --jq '.name'
 ```
+
+Expected: `release.yml`. If it is absent, Task 6B did not complete and this
+task must not proceed.
 
 - [ ] **Step 2: Ask the human to create the environment**
 
@@ -576,6 +658,11 @@ gh pr create --fill && gh pr merge --squash --delete-branch
 Expected: release-please opens a release PR titled for `0.1.1`, carrying the
 version bump and a CHANGELOG entry.
 
+Because this now runs from a public repository, `0.1.1` is the **first
+provenance-carrying release**. There is no second validation release: the
+`0.1.2` step that used to live in Task 8 is gone, and Task 8 verifies
+provenance on `0.1.1` instead.
+
 - [ ] **Step 5: Edit the CHANGELOG in the release PR, then merge it**
 
 Read what release-please generated. It will be a bullet derived from the
@@ -626,16 +713,36 @@ Ask the human to revoke the token on npmjs.com → Access Tokens. Then delete
 the repository secret and prove it is gone:
 
 ```bash
-gh secret delete NPM_TOKEN --repo yabbadabbadev/pepito
-gh secret list --repo yabbadabbadev/pepito
+gh secret delete NPM_TOKEN --repo yabbadabbadev/pepito-archive
 ```
 
 Expected: `NPM_TOKEN` absent. The order matters: until Step 7 proved OIDC
 works, the token was the only way to publish.
 
+**Revised 2026-08-19:** the secret exists on the repository that becomes
+`pepito-archive`, not on the new one — a new repository starts with no
+secrets. Delete it there, and check both:
+
+```bash
+gh secret list --repo yabbadabbadev/pepito-archive
+gh secret list --repo yabbadabbadev/pepito
+```
+
+Expected: `NPM_TOKEN` absent from both. Revoking the token on npmjs.com is
+what actually retires the credential; deleting the secret only removes the
+copy.
+
 ---
 
 ### Task 5: The security audit
+
+**EXECUTED 2026-08-19, and its verdict does NOT stand.** The report exists at
+`docs/security-audit-2026-08-19.md`, but an adversarial review found coverage
+gaps in dimensions 1, 2, 3 and 5, and found that no dimension owned the
+surfaces GitHub retains. Task 5R below redoes the affected dimensions and adds
+dimension 9. **Task 6 consumes Task 5R's verdict, not this one.** The steps
+below are kept unchanged as the record of what was run — the commands are what
+Task 5R corrects, and reading them is how the correction is understood.
 
 **Files:**
 
@@ -783,18 +890,267 @@ company references."
 
 ---
 
-### Task 6: Rewrite commit authorship
+### Task 5R: Redo the under-covered audit dimensions, and add dimension 9
 
-**Files:** none in the working tree. This task rewrites git history on the
-remote.
+**Files:**
+
+- Modify: `docs/security-audit-2026-08-19.md` — dimensions 1, 2, 3 and 5
+  re-measured; dimension 9 added; the go/no-go line rewritten
 
 **Interfaces:**
 
-- Consumes: a passing Task 5. **Do not start if any dimension failed.**
-- Produces: a history with a single authorship identity, which is the
-  precondition for Task 7 making it public.
+- Consumes: Task 5's report, whose verdicts it replaces where it re-measures.
+- Produces: the go/no-go verdict **Task 6 depends on**. **If any dimension
+  fails, stop and report — do not proceed to Task 6.**
+- Ordering that is easy to get wrong: this task's commit must be **merged to
+  `main` before Task 6 runs**. Task 6 rewrites `main` and Task 6B pushes the
+  result, so anything not on `main` at that moment never reaches the published
+  repository. A corrected audit report that lands afterwards would have to be
+  re-committed by hand.
 
-**This task force-pushes. Every step below is human-gated.**
+**The general lesson this task exists to encode, stated once and applied in
+every command below:**
+
+- `git grep` without a revision argument searches **the index**, not history.
+  A criterion phrased over history needs `git grep <rev>`, `--all`, or a
+  `git log`-based scan.
+- `git log -p` and anything built on it **skip merge commits** unless told
+  otherwise (`-m`, `--first-parent`, or `--diff-merges`). `gitleaks
+--log-opts=--all` inherits that skipping, so "every commit" is an
+  overstatement of what it saw.
+- `grep -I` **silently ignores** any file it decides is binary. Silence from
+  `grep -I` is not the same as absence.
+- An exit status read through a pipe is **the pipe's last command's status**,
+  not the interesting command's. A pipeline ending in `sort -u` returns 0
+  whatever happened upstream. This is the same failure shape as reading `N`
+  from `git log --format=%G?` on a machine without `gpg`, which this project
+  already fell for once: a meter that cannot measure must go red, not return a
+  convenient answer.
+
+- [ ] **Step 0: Work on a branch**
+
+```bash
+git switch chore/security-audit 2>/dev/null || git switch -c chore/audit-redo
+git status --short
+```
+
+Either branch is fine — `chore/security-audit` already carries the report this
+task corrects. What is not fine is `main`: a `PreToolUse` hook blocks it, and
+the repository rule stands regardless of the hook.
+
+- [ ] **Step 1: Dimension 1 — re-run the scanner, and state its real scope**
+
+```bash
+gitleaks detect --source . --log-opts="--all" --redact --verbose; echo "gitleaks exit=$?"
+git rev-list --count --all
+git rev-list --count --all --merges
+```
+
+Record all three numbers. The report must say that `gitleaks` scanned the
+non-merge commits — `--log-opts=--all` inherits `git log`'s merge skipping —
+and state how many merge commits were therefore not scanned, rather than
+claiming the whole history. Cover the merges explicitly:
+
+```bash
+git rev-list --all --merges | while read -r sha; do
+  git show --diff-merges=first-parent --format= "$sha"
+done | gitleaks detect --pipe --redact --verbose; echo "merge scan exit=$?"
+```
+
+If `--pipe` is unavailable in the installed version, say so and record the
+dimension as partially covered with the reason. Do not claim coverage the tool
+did not give.
+
+- [ ] **Step 2: Dimension 1 — the manual read the method requires**
+
+The spec's method is `gitleaks` **plus a manual read of every tracked file**.
+That read was omitted, and the file count cited was stale. Re-establish both:
+
+```bash
+git ls-files | wc -l
+git ls-files
+```
+
+Read every file in that list. Record the real count and the fact that the read
+happened, per file category rather than per file. A count that disagrees with
+an earlier report is itself a finding worth one line.
+
+- [ ] **Step 3: Dimension 2 — the corporate domain, over history and not the index**
+
+The pattern stays derived at run time and is never typed into a tracked file:
+
+```bash
+CORP_DOMAINS="$(git log --all --format='%ae%n%ce' | sed -n 's/.*@//p' | sort -u \
+  | grep -vE '^(github\.com|users\.noreply\.github\.com|yabbadabba\.dev)$' | paste -sd'|' -)"
+
+# Tracked content, at every revision reachable from any ref -- NOT the index.
+git grep -nIiE "$CORP_DOMAINS" $(git rev-list --all) -- .
+echo "history content exit=$?"
+
+# The index, separately, so the two are never conflated.
+git grep -nIiE "$CORP_DOMAINS" -- .
+echo "index exit=$?"
+
+# Authorship and messages.
+git log --all --format='%an <%ae>%n%cn <%ce>%n%B' | grep -icE "$CORP_DOMAINS"
+```
+
+Note the shape of the first command: `git grep` is given every revision as an
+argument, so it searches history rather than the index, and its status is
+echoed directly rather than piped into anything that would swallow it. On a
+history this small the argument list is safe; if it ever grows past the
+shell's limit, loop over `git rev-list --all` and echo each non-zero status
+inside the loop. Expected: zero content hits at every revision; a non-zero authorship count, which is the exposure the rewrite
+and the new repository remove together.
+
+`grep -I` is in use here deliberately — this repository tracks no binary
+files. Confirm that rather than assuming it:
+
+```bash
+git ls-files | while read -r f; do
+  git check-attr -a -- "$f" | grep -qi 'binary' && echo "binary: $f"
+done; echo "binary check done"
+file --mime $(git ls-files) | grep -v 'text/' || echo "all tracked files are text"
+```
+
+- [ ] **Step 4: Dimension 3 — PII, over history**
+
+```bash
+git grep -nIoE '/Users/[a-zA-Z0-9._-]+' $(git rev-list --all) -- .
+echo "home path exit=$?"
+ADDRESSES="$(mktemp)"
+git grep -hIoE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' $(git rev-list --all) -- . > "$ADDRESSES"
+echo "email grep exit=$?"
+sort -u "$ADDRESSES"; rm -f "$ADDRESSES"
+```
+
+Expected: the known home-path blob in PR #4's history and nothing on `main` —
+which the spec records as measured, with `git merge-base --is-ancestor`
+disproving the claim that it was reachable from `main`. Every email address
+either the package author's or one of GitHub's generic addresses. Report the
+distinction between "in the tree" and "in a retained pull ref" explicitly:
+they have different remediations, and dimension 9 owns the second.
+
+- [ ] **Step 5: Dimension 5 — add the two omitted pieces of evidence**
+
+The original run recorded the lockfile registries, the absence of `.npmrc` and
+`.env`, and the secret names. It omitted workflow permissions and `.claude/`.
+Add both:
+
+```bash
+gh api repos/yabbadabbadev/pepito/actions/permissions/workflow
+grep -rn 'permissions:' -A4 .github/workflows/
+git ls-files .claude
+git grep -nIiE 'token|secret|password|key' -- .claude
+```
+
+Expected: default workflow permissions read-only with the PR-creation flag as
+measured; every workflow's `permissions:` block scoped per job, with
+`id-token: write` on the publish job alone; nothing in `.claude/` that names
+a credential value rather than a credential's name.
+
+- [ ] **Step 6: Dimension 9 — the surfaces GitHub retains**
+
+No earlier dimension owned any of these. This one does, and it is the reason
+the whole phase-2 approach changed.
+
+```bash
+git ls-remote origin 'refs/pull/*'
+git fetch origin '+refs/pull/*/head:refs/remotes/pr/*'
+for r in $(git for-each-ref --format='%(refname)' refs/remotes/pr); do
+  echo "== $r"; git log --format='%h %ae' "$r" | sort -u -k2
+done
+gh pr list --state all --json number,title,body --jq '.[] | "\(.number) \(.title)"'
+gh issue list --state all --json number,title --jq '.[] | "\(.number) \(.title)"'
+gh run list --limit 50 --json databaseId,name,conclusion --jq '.[] | "\(.databaseId) \(.name) \(.conclusion)"'
+gh api repos/yabbadabbadev/pepito --jq '{description, topics, forks_count}'
+git tag -l | while read -r t; do echo "== $t"; git cat-file -p "$t" | head -5; done
+npm view @yabbadabbadev/pepito@0.1.0 --json | node -e "const p=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(p.dist)"
+```
+
+Expected, per the reviewer who found this gap and checked most of it: PR
+titles and bodies, issues, run logs, description, topics, tags and the
+published `0.1.0` tarball all clean; the pull refs **not** clean, carrying up
+to 15 commits authored with a corporate domain plus one blob with an absolute
+home path. Record that the refs are immutable from the client:
+
+```bash
+git push --force origin refs/remotes/pr/1:refs/pull/1/head
+```
+
+Expected: rejected with `deny updating a hidden ref`. That rejection is the
+evidence for the new-repository decision, so it belongs in the report rather
+than only in a ledger.
+
+- [ ] **Step 7: Rewrite the report**
+
+`docs/security-audit-2026-08-19.md` keeps its filename and its date — it is
+the audit of this repository, corrected, not a second audit. Per dimension:
+the command actually run, its real output, and a verdict. The re-measured
+dimensions replace their earlier verdicts outright; a superseded verdict is
+marked superseded with the reason, never silently overwritten. Add dimension 9
+with its own section. Rewrite the go/no-go line: it can no longer read GO for
+"make this repository public", because that is not what happens any more — the
+verdict is GO for **publishing the rewritten history as a new repository**,
+with `pepito-archive` staying private permanently.
+
+Evidence stays redacted, as before: the count and the verdict, never the
+matched string. Dimension 9 in particular must describe the corporate address
+rather than reproduce it.
+
+- [ ] **Step 8: Verify and commit**
+
+```bash
+npm run format:check
+CORP_DOMAINS="$(git log --all --format='%ae%n%ce' | sed -n 's/.*@//p' | sort -u \
+  | grep -vE '^(github\.com|users\.noreply\.github\.com|yabbadabba\.dev)$' | paste -sd'|' -)"
+grep -niE "${CORP_DOMAINS}|/Users/" docs/security-audit-2026-08-19.md; echo "grep exit=$?"
+```
+
+Expected: Prettier green, and `grep exit=1` — no match. Note the `echo` of the
+status directly after `grep`, with nothing piped in between: that is the point
+of this task.
+
+```bash
+git add docs/security-audit-2026-08-19.md
+git commit -m "docs: redo the under-covered audit dimensions, add dimension 9
+
+Dimensions 2 and 3 searched the index with a revision-less git grep while
+their criteria demand history; dimension 1 omitted the manual read of every
+tracked file and overstated its scope, since gitleaks inherits git log's
+skipping of merge commits; dimension 5 omitted workflow permissions and
+.claude/; and several exit statuses were read through pipelines ending in
+sort -u, which always return 0.
+
+Dimension 9 covers the surfaces GitHub retains -- pull refs, PR titles and
+bodies, issues, run logs, description and topics, tags, forks and the
+published tarball -- which no dimension owned. It is what found the pull-ref
+exposure that changed the remediation."
+```
+
+---
+
+### Task 6: Rewrite commit authorship (locally; nothing is pushed)
+
+**REVISED 2026-08-19 — destination only.** The rewrite, its mailmap, its
+tree-SHA invariant and its abort condition are unchanged. What changed is where
+the result goes: it is **no longer force-pushed to this repository**, because
+GitHub would keep serving the pre-rewrite commits through `refs/pull/*`. This
+task now ends with a verified mirror on disk and pushes nothing. Task 6B
+publishes it, to a new repository.
+
+**Files:** none in the working tree. This task rewrites git history inside a
+scratch mirror.
+
+**Interfaces:**
+
+- Consumes: a passing **Task 5R**. **Do not start if any dimension failed.**
+- Produces: a verified rewritten mirror in a scratch directory, which Task 6B
+  pushes. Task 6B must not start before this task's tree-SHA check matches.
+
+**This task destroys nothing reachable from the remote and pushes nothing. The
+signature-loss step below is still human-gated, because the loss becomes real
+the moment Task 6B pushes.**
 
 - [ ] **Step 1: Ask the human to verify the email on GitHub — blocking**
 
@@ -889,28 +1245,181 @@ GitHub's own merge, not a personal address.
 **If the tree SHA differs, stop. Push nothing.** Report the mismatch: it means
 the rewrite altered content, which is not what was authorized.
 
-- [ ] **Step 7: Ask the human to authorize the force-push, then push**
+- [ ] **Step 7 (SUPERSEDED 2026-08-19 — do not run): force-push to this
+      repository**
 
 ```bash
+# SUPERSEDED -- do not run. Kept for context; see Task 6B.
 git push --force origin 'refs/heads/main:refs/heads/main'
 git push --force --tags origin
 ```
 
-- [ ] **Step 8: Delete the stale remote branches**
+This is the step the pull-ref finding invalidates. It would succeed, `main`
+would become clean, and GitHub would go on serving the pre-rewrite commits
+through `refs/pull/1/head` .. `refs/pull/4/head`, which are public on a public
+repository and cannot be updated from the client — measured, with
+`deny updating a hidden ref`. Task 6B replaces it.
+
+- [ ] **Step 8 (SUPERSEDED 2026-08-19 — do not run): delete the stale remote
+      branches**
+
+Nothing needs deleting: Task 6B pushes `refs/heads/main` and the tags and
+nothing else, so `docs/worktree-warning` and `publish-without-provenance`
+simply never exist on the new repository. Verifying their absence there is
+cheaper and stronger than deleting them here.
+
+- [ ] **Step 9: Record the scratch mirror's location and stop**
+
+Do not touch the working clone yet. It is still a valid clone of the old
+remote, which stays valid until Task 6B repoints it, and moving it now would
+leave the machine with no working copy while the new repository does not exist.
 
 ```bash
-git push origin --delete docs/worktree-warning publish-without-provenance
-gh api repos/yabbadabbadev/pepito/branches --jq '.[].name'
+pwd            # the scratch mirror -- write this path down for Task 6B
+git rev-parse HEAD
+git tag -l
 ```
 
-Expected: only `main` (plus any branch open at the time).
+Expected: the mirror path, the rewritten `HEAD` SHA and both tags. Task 6B
+consumes exactly these. **Do not delete the scratch directory** — it is the
+only copy of the rewritten history until Task 6B has pushed it.
 
-- [ ] **Step 9: Re-clone the local working copy so it cannot diverge**
+---
 
-Every local commit now has a different SHA, so the old clone is incompatible
-with the remote. Move it aside rather than deleting it, re-clone, and restore
-the repository-level identity — a fresh clone inherits the global config,
-which is what put a corporate address in the history in the first place.
+### Task 6B: Archive this repository, publish the rewritten history as a new one
+
+**Files:** none. This task changes state on GitHub only.
+
+**Interfaces:**
+
+- Consumes: Task 6's verified scratch mirror. **Do not start before Task 6's
+  tree-SHA check matched.** If it did not match, Task 6 aborted and there is
+  nothing to push.
+- Produces: `yabbadabbadev/pepito-archive` (private, permanently) and a new
+  **private** `yabbadabbadev/pepito` carrying only the rewritten `main` and its
+  tags. Task 7 flips the new one public and must not start before this task's
+  verification passes.
+
+**Every step that changes GitHub state is human-gated. The agent does not
+rename, create or push on the human's behalf.**
+
+- [ ] **Step 1: Confirm the standing constraint out loud, before anything moves**
+
+`pepito-archive` must never be made public. It retains `refs/pull/1/head`
+through `refs/pull/4/head`, which carry commits authored with a corporate email
+address and one blob with an absolute home path; those refs are immutable from
+the client, so visibility is the only control that exists. State this to the
+human and get an explicit acknowledgement before the rename. It is not a
+passing remark: it is the whole reason the archive stays where it is instead of
+being deleted, and the reason deleting it is also not proposed — the `v0.1.0`
+tag and the migration's evidence trail live there.
+
+- [ ] **Step 2: Ask the human to rename this repository — human-gated**
+
+GitHub → Settings → General → Repository name → `pepito-archive` → Rename.
+
+```bash
+gh api repos/yabbadabbadev/pepito-archive --jq '.name, .visibility'
+```
+
+Expected: `pepito-archive` and `private`. If `.visibility` is anything but
+`private`, stop: the constraint in Step 1 is already violated and nothing
+further should happen until it is fixed.
+
+The rename leaves GitHub's redirects in place from the old name — documented,
+and deliberately broken by Step 3, because `yabbadabbadev/pepito` must resolve
+to the new public repository rather than redirect to the archive. That is
+GitHub's own documented consequence of reusing a name, and it is the outcome
+wanted here.
+
+- [ ] **Step 3: Ask the human to create the new repository — private — human-gated**
+
+Create `yabbadabbadev/pepito`, **visibility private**, with no README, no
+`.gitignore` and no license — an empty repository, so the first push is the
+rewritten history and nothing else.
+
+```bash
+gh api repos/yabbadabbadev/pepito --jq '.name, .visibility, .size'
+git ls-remote https://github.com/yabbadabbadev/pepito
+```
+
+Expected: `pepito`, `private`, size `0`, and `git ls-remote` returning nothing
+at all. A non-empty listing means the repository was initialized with content;
+ask for it to be recreated empty rather than force-pushing over it.
+
+Private first is deliberate: **verification happens before exposure.** Every
+check in Step 5 reads a repository nobody outside can see yet, and the new
+repository's pull refs start empty.
+
+- [ ] **Step 4: Push only `main` and the tags, from the scratch mirror**
+
+```bash
+cd <the scratch mirror path recorded in Task 6 Step 9>
+git remote add new git@github.com:yabbadabbadev/pepito.git
+git push new 'refs/heads/main:refs/heads/main'
+git push new --tags
+```
+
+Note what is **not** pushed: `git push --mirror` would copy every ref the
+mirror holds, including any `refs/pull/*` it fetched, which would defeat the
+entire point of this task. Push the two refspecs above and nothing else.
+
+- [ ] **Step 5: Verify the new repository, while it is still private**
+
+```bash
+git ls-remote new
+gh api repos/yabbadabbadev/pepito/branches --jq '.[].name'
+git ls-remote new 'refs/pull/*'; echo "pull refs exit=$?"
+```
+
+Expected: only `refs/heads/main` and `refs/tags/v0.1.0` (plus `v0.1.1` if it
+exists by then); `main` the only branch; **no pull refs at all**. Then, from a
+fresh clone rather than from the mirror, because a mirror can flatter itself:
+
+```bash
+CHECK="$(mktemp -d)"
+git clone git@github.com:yabbadabbadev/pepito.git "$CHECK/pepito"
+cd "$CHECK/pepito"
+git rev-parse HEAD^{tree}          # must equal Task 6 Step 2's value
+git rev-list --count --all
+git log --format='%an <%ae>' | sort -u
+git tag -l
+git grep -nIiE "$(git log --all --format='%ae%n%ce' | sed -n 's/.*@//p' | sort -u \
+  | grep -vE '^(github\.com|users\.noreply\.github\.com|yabbadabba\.dev)$' | paste -sd'|' -)" \
+  $(git rev-list --all) -- .; echo "corporate domain exit=$?"
+```
+
+Expected: **the tree SHA identical to Task 6 Step 2's**, the same commit count,
+a single author identity, both tags, and `corporate domain exit=1` — meaning no
+match, with the status read directly and not through a pipe. Note that on a
+clean history the derived pattern may come out empty; if it does, say so and
+record the dimension as satisfied by the authorship listing instead of by an
+empty-pattern grep, which would match everything.
+
+**If the tree SHA differs from Task 6 Step 2's, stop. Report it.** The content
+that landed is not the content that was authorized.
+
+- [ ] **Step 6: Re-run audit dimension 9 against the new repository**
+
+```bash
+gh api repos/yabbadabbadev/pepito --jq '{description, topics, forks_count}'
+gh pr list --repo yabbadabbadev/pepito --state all --json number --jq 'length'
+gh issue list --repo yabbadabbadev/pepito --state all --json number --jq 'length'
+gh run list --repo yabbadabbadev/pepito --limit 50 --json databaseId --jq 'length'
+```
+
+Expected: no pull requests, no issues, no runs, no forks — a repository whose
+retained surfaces are empty because nothing has happened in it yet. This is
+the evidence that the move achieved what the force-push could not, and it
+belongs in the audit report.
+
+- [ ] **Step 7: Repoint the local working copy**
+
+Every local commit now has a different SHA, and the old remote is a different
+repository. Move the old clone aside rather than deleting it, clone the new
+one, and restore the repository-level identity — a fresh clone inherits the
+global config, which is what put a corporate address in the history in the
+first place.
 
 ```bash
 cd ~/dummies
@@ -921,15 +1430,20 @@ git config --local user.email alex@yabbadabba.dev
 git config --local user.name "Alex Fuentes"
 git log --format='%an <%ae>' | sort -u
 git var GIT_AUTHOR_IDENT
+git remote -v
 ```
 
-Expected: one identity in the log, and the new identity active. Keep
-`pepito.pre-rewrite` until Task 8 is done, then delete it — it is the only
-remaining copy of the old history, and it contains what the rewrite removed.
+Expected: one identity in the log, the new identity active, and `origin`
+pointing at the new repository. Keep `pepito.pre-rewrite` until Task 8 is done,
+then delete it — it is the last local copy of the old history.
 
 ---
 
 ### Task 7: Go public, and harden
+
+**REVISED 2026-08-19 — target only.** Everything below now applies to the
+**new** repository created in Task 6B, never to `pepito-archive`. **Do not
+start before Task 6B's Step 5 and Step 6 verifications passed.**
 
 **Files:**
 
@@ -938,8 +1452,10 @@ remaining copy of the old history, and it contains what the rewrite removed.
 
 **Interfaces:**
 
-- Consumes: a verified Task 6.
-- Produces: a public repository whose settings Task 8's provenance depends on.
+- Consumes: a verified Task 6B.
+- Produces: a public repository, which is the precondition for **Task 4** (the
+  cutover) and, through it, for Task 8's provenance. Task 4 must not start
+  before Step 3 below confirms `public`.
 
 - [ ] **Step 1: Write SECURITY.md on a work branch**
 
@@ -962,12 +1478,23 @@ git push -u origin chore/public-hardening
 gh pr create --fill && gh pr checks --watch && gh pr merge --squash --delete-branch
 ```
 
-- [ ] **Step 3: Ask the human to make the repository public — irreversible**
+- [ ] **Step 3: Ask the human to make the NEW repository public — irreversible**
 
-GitHub → Settings → General → Danger Zone → Change visibility → Public.
+GitHub → Settings → General → Danger Zone → Change visibility → Public, on
+`yabbadabbadev/pepito`. **Never on `pepito-archive`, which stays private
+permanently.**
 
-Confirm the preconditions out loud before asking: Task 5 passed, Task 6's tree
-SHA matched, the force-push landed, the stale branches are gone. Then:
+Confirm the preconditions out loud before asking: Task 5R passed on every
+dimension, Task 6's tree SHA matched, Task 6B's fresh-clone check reproduced
+that same tree SHA, the new repository has no pull refs and no stale branches,
+and the archive reads `private`. Re-read that last one immediately before
+asking — it is the one that cannot be undone in the wrong direction:
+
+```bash
+gh api repos/yabbadabbadev/pepito-archive --jq '.visibility'
+```
+
+Expected: `private`. Then:
 
 ```bash
 gh api repos/yabbadabbadev/pepito --jq '.visibility, .default_branch'
@@ -1012,9 +1539,20 @@ gh api -X PUT repos/yabbadabbadev/pepito/private-vulnerability-reporting
 gh api repos/yabbadabbadev/pepito/vulnerability-alerts && echo "alerts on"
 ```
 
-- [ ] **Step 7: Protect main — after the force-push, never before**
+- [ ] **Step 7 (SUPERSEDED — see Steps 7a–7g below): Protect main — after the
+      history has landed, never before**
+
+The classic branch-protection call originally specified here is superseded by
+repository rulesets (Steps 7a–7g). Rulesets are the modern mechanism, support
+an explicit bypass list rather than an all-or-nothing `enforce_admins` flag,
+and — unlike classic protection's practical expectation of a public
+repository's review culture — are equally configurable while this repository
+is still private. The classic call is kept below, struck through in spirit
+but not in text, because it is what surfaced the trap that Step 7a exists to
+avoid; do not run it.
 
 ```bash
+# SUPERSEDED — do not run. Kept for context; see Steps 7a-7g.
 gh api -X PUT repos/yabbadabbadev/pepito/branches/main/protection \
   --input - <<'JSON'
 {
@@ -1029,31 +1567,189 @@ JSON
 gh api repos/yabbadabbadev/pepito/branches/main/protection --jq '.allow_force_pushes.enabled, .required_status_checks.contexts'
 ```
 
-Expected: force pushes disabled, `quality` required.
+The consequence that would have followed from running it is exactly what
+Step 7a exists to avoid: requiring the `quality` check makes release-please's
+own release PRs permanently unmergeable, because `ci.yml` runs
+`on: pull_request` and a PR opened with the default `GITHUB_TOKEN` — which is
+how `release-please-action` opens the release PR — does not trigger other
+workflows. `quality` would never run on a release PR, the required check
+would never report success, and the only escape would be an admin bypass
+nobody planned for. See `docs/superpowers/specs/2026-08-18-publishing-trust-and-going-public-design.md`
+for the full design; the steps below are its implementation.
 
-**Known consequence, not a bug to fix here:** requiring the `quality` check
-makes release-please's own release PRs unmergeable through the normal path.
-`ci.yml` runs `on: pull_request`, and a PR opened with the default
-`GITHUB_TOKEN` — which is how `release-please-action` opens the release PR —
-does not trigger other workflows, the same restriction that shaped why
-`release.yml` carries both jobs in Task 1. `quality` therefore never runs on
-a release PR, the required check never reports success, and GitHub blocks
-the merge button indefinitely, not just delays it.
+- [ ] **Step 7a: Prerequisite — give `ci.yml` a `push` trigger for
+      release-please's branches, before creating any ruleset that requires
+      `quality`**
 
-`enforce_admins` stays `false` on purpose so this has a resolution: the
-repository owner merges the release PR with `gh pr merge --admin --squash`
-(or the equivalent "Merge without waiting for requirements" button), which
-bypasses required checks for admins only. This is the intended mechanism,
-not an unstated workaround — document it in `CONTRIBUTING.md`'s release
-section so the next release doesn't look stuck. The alternative of adding
-`pull_request_target` to `ci.yml` is deliberately not taken here: it would
-hand a fork's PR run access to repository secrets, which is exactly what
-Step 5 records `ci.yml` avoiding.
+This step touches `.github/workflows/ci.yml` and is scoped to whichever task
+implements this design — it is recorded here as a hard ordering constraint,
+not performed by this plan-annotation pass. It lands as an ordinary PR on the
+new repository, which means it also must not run before Task 6B has pushed
+that repository's `main`. Add a `push` trigger alongside
+the existing `pull_request` trigger, scoped to the branch pattern
+release-please uses:
 
-- [ ] **Step 8: Close dimension 8 in the report, and commit**
+```yaml
+on:
+  pull_request:
+  push:
+    branches: ['release-please--**']
+```
+
+The reasoning: a required status check is only ever satisfied by a check run
+reported against the same head SHA the ruleset evaluates. `ci.yml` triggering
+`on: pull_request` means a PR opened by `GITHUB_TOKEN` — which is how
+release-please opens its release PR — never produces that check run, because
+GitHub does not trigger `pull_request`-scoped workflows for PRs opened by the
+default token. Adding the `push` trigger for `release-please--**` produces
+the check run from the push that creates or updates that branch, on the same
+SHA the release PR later carries, so the requirement is satisfied
+legitimately rather than through a bypass. **This must land before the
+ruleset requiring `quality` (Step 7c) is created** — creating the ruleset
+first leaves the very first release PR after that point permanently stuck,
+with no planned way out.
+
+- [ ] **Step 7b: Ask the human to decide on required approvals — a real
+      trade-off with one maintainer, not a formality**
+
+Requiring pull request approvals is attractive because release PRs are
+authored by `github-actions[bot]`, and the human maintainer can approve
+those. But GitHub does not allow a user to approve their own pull request, so
+any PR the maintainer opens personally would be blocked by the same rule
+unless the maintainer is also on the ruleset's bypass list — at which point
+the required-approval rule is a formality for that person's own work rather
+than an actual control. Two honest resolutions exist, and the choice between
+them belongs to the human, not to whoever implements this:
+
+- Accept the bypass: put the maintainer on the bypass list, require
+  approvals for everyone else (in practice, for release PRs, which the
+  maintainer can approve), and accept that the rule does not gate the
+  maintainer's own PRs.
+- Wait for a second maintainer before turning on required approvals at all,
+  so the rule has teeth for every author including the current one.
+
+Do not pick one on the implementer's behalf; ask.
+
+- [ ] **Step 7c: What was asked for that already comes free — reviewers
+      restricted to organization members**
+
+No separate rule is needed for this. GitHub only counts an approving review
+toward a required-approvals rule when it comes from a user with write access
+to the repository, so a review from an outside contributor never satisfies
+the rule regardless of ruleset configuration. If finer-grained control is
+wanted later — restricting approval authority to specific people or teams
+rather than "anyone with write access" — the mechanism is a `CODEOWNERS`
+file plus the ruleset's "Require review from Code Owners" option. Note it as
+available, not as needed now: this repository has one maintainer, and
+`CODEOWNERS` has nothing to route to yet.
+
+- [ ] **Step 7d: What must NOT be required — signed commits**
+
+Do not add a signed-commits rule to the `main` ruleset. The maintainer does
+not sign commits locally, so the rule would block the maintainer's own
+pushes, not just an attacker's. This is also where the measured finding
+recorded in this plan's Task 6 Step 4 and in the spec's Findings section
+becomes directly relevant: `git filter-repo` strips the `gpgsig` header from
+every commit it rewrites, and of this repository's commits, exactly three
+carry a signature at all — the PR #1, #2 and #3 merge commits, signed by
+GitHub's own web-flow key when the merge happened through the GitHub UI, not
+by the maintainer. A signed-commits requirement would not reflect anything
+this repository's actual commit flow produces.
+
+- [ ] **Step 7e: Create the branch ruleset on `main`**
+
+```bash
+gh api -X POST repos/yabbadabbadev/pepito/rulesets \
+  --input - <<'JSON'
+{
+  "name": "main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/heads/main"], "exclude": [] } },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    { "type": "required_linear_history" },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": true
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "required_status_checks": [{ "context": "quality" }]
+      }
+    }
+  ]
+}
+JSON
+```
+
+Rules beyond what was originally asked for, each with its own reason: force
+pushes and deletions blocked on `main` (a stale-but-common gap that classic
+protection also covered, kept here); conversation resolution required
+(`required_review_thread_resolution`, so an unresolved review comment cannot
+be squash-merged past); linear history required (`required_linear_history`,
+which matches the squash-merge workflow this repository already uses for
+every PR in this plan — it does not change behavior, it makes the existing
+behavior enforced). `required_approving_review_count` and the trade-off it
+carries is Step 7b's decision, recorded here as `1`; adjust to `0` if the
+human chose to wait for a second maintainer instead of accepting the bypass.
+
+Whichever count is chosen, list the maintainer as a bypass actor at ruleset
+creation time if Step 7b's answer was "accept the bypass" — a bypass actor is
+set via the `bypass_actors` field on the same payload, naming the
+maintainer's GitHub user ID with `bypass_mode: "always"`.
+
+- [ ] **Step 7f: Create a separate tag ruleset protecting `v*`**
+
+```bash
+gh api -X POST repos/yabbadabbadev/pepito/rulesets \
+  --input - <<'JSON'
+{
+  "name": "release-tags",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/tags/v*"], "exclude": [] } },
+  "rules": [{ "type": "deletion" }, { "type": "update" }]
+}
+JSON
+```
+
+This matters specifically because of the pipeline built in this plan:
+release-please now creates tags automatically on every merged release PR,
+with no manual step and no second thought. A protected tag ruleset is what
+stops a tag for a version already published to npm from being deleted and
+re-created pointing at different content — a mistake that is easy to make by
+hand and is exactly the kind of thing automation makes easy to make by
+accident too.
+
+- [ ] **Step 7g: After going public, restrict who can bypass the rulesets**
+
+Once the repository is public (Task 7 Step 3), revisit both rulesets'
+`bypass_actors` and narrow them to the smallest set that still lets releases
+ship — in practice, the repository owner alone. The rulesets' rules
+themselves do not need to change at this point; what changes is exposure,
+because a public repository draws more attempts to find whatever the bypass
+list allows through. **The bypass list is what should be audited
+periodically going forward, not the rules** — the rules are static policy,
+the bypass list is the part that can silently grow.
+
+- [ ] **Step 8: Close dimensions 8 and 9 in the report, and commit**
 
 Fill in dimension 8 with the `gh api` output for each control — the verdict per
-control, not a checkmark. Then:
+control, not a checkmark. Add to dimension 9 the re-run Task 6B Step 6
+performed against the new repository: no pull refs, no pull requests, no
+issues, no runs, no forks. That empty result is the evidence that moving
+repositories achieved what a force-push could not, and it is the only place in
+the report where dimension 9 comes back clean. Then:
 
 ```bash
 git switch -c chore/close-audit
@@ -1072,35 +1768,35 @@ gh pr create --fill && gh pr checks --watch && gh pr merge --squash --delete-bra
 
 ### Task 8: Prove provenance, and close the documentation
 
+**REVISED 2026-08-19.** Its own release is gone. Task 4 now runs from an
+already-public repository, so `0.1.1` is the first provenance-carrying release
+and this task verifies that release rather than forcing a second one. **Do not
+start before Task 4's publish is green.**
+
 **Files:**
 
 - Modify: `ROADMAP.md`, `CLAUDE.md`
 
 **Interfaces:**
 
-- Consumes: the public repository from Task 7 and the OIDC path proven in
-  Task 4, unchanged.
-- Produces: the first provenance-carrying release, and documentation that
-  describes what happened rather than what was planned.
+- Consumes: the public repository from Task 7 and the `0.1.1` publish from
+  Task 4.
+- Produces: documentation that describes what happened rather than what was
+  planned.
 
-- [ ] **Step 1: Force the provenance validation release**
+- [ ] **Step 1 (REMOVED 2026-08-19): the `0.1.2` validation release**
 
-```bash
-git switch -c chore/release-0.1.2
-git commit --allow-empty -m "chore: release 0.1.2
+Gone, and worth saying why rather than deleting silently. It existed because
+the original order published `0.1.1` from a **private** repository, where the
+registry generates no provenance, so a second release was needed once the
+repository turned public. Under the revised order the repository is already
+public when Task 4 publishes, `0.1.1` carries provenance on its first release,
+and a `0.1.2` would prove nothing `0.1.1` does not — while costing a second
+npm configuration pass and a version number spent on nothing.
 
-First release published from a public repository, which is what makes the
-registry generate provenance. No source change.
+Nothing to run in this step.
 
-Release-As: 0.1.2"
-git push -u origin chore/release-0.1.2
-gh pr create --fill && gh pr merge --squash --delete-branch
-```
-
-Then edit the CHANGELOG in the release PR as in Task 4 Step 5, merge it, and
-approve the environment gate.
-
-- [ ] **Step 2: Verify provenance exists — from the registry, not from the run log**
+- [ ] **Step 2: Verify provenance on `0.1.1` — from the registry, not from the run log**
 
 ```bash
 npm view @yabbadabbadev/pepito version
@@ -1108,11 +1804,13 @@ npm view @yabbadabbadev/pepito --json | node -e "const p=JSON.parse(require('fs'
 npm audit signatures
 ```
 
-Expected: `0.1.2`, an attestations entry in `dist`, and `npm audit signatures`
+Expected: `0.1.1`, an attestations entry in `dist`, and `npm audit signatures`
 reporting verified signatures and attestations. If provenance is absent, do
 not paper over it: the likely causes are the repository not actually being
-public yet or the package being published from a ref the attestation cannot
-resolve, and both are diagnosable from the run log.
+public at publish time or the package being published from a ref the
+attestation cannot resolve, and both are diagnosable from the run log. Note
+that `0.1.0`, published from the old repository, carries no provenance and
+never will — that is expected, not a finding.
 
 - [ ] **Step 3: Confirm no `--provenance` flag was ever added**
 
@@ -1126,7 +1824,9 @@ in.
 
 - [ ] **Step 4: Close the ROADMAP**
 
-Rewrite three rows: mark "Trusted publishing (OIDC, no token)" as done with
+Rewrite three rows, and add the repository move as a fourth entry — it is the
+kind of thing a reader of the ROADMAP will otherwise discover from a broken
+link: mark "Trusted publishing (OIDC, no token)" as done with
 the date; mark "Provenance publishing" as done, and correct the reasoning
 recorded there — the entry promised to re-enable a flag that turned out never
 to be needed; drop "remove `workflow_dispatch`" as superseded, since the
@@ -1135,7 +1835,9 @@ trigger left with `publish.yml`. Add nothing that was not actually deferred.
 - [ ] **Step 5: Update the CLAUDE.md status and Releasing sections**
 
 The Status table gets a row for this migration: what was executed, on what
-date, with the verification. "Releasing" describes release-please plus OIDC
+date, with the verification — including that the published history lives in a
+new repository, that `pepito-archive` is private permanently and must stay
+that way, and that `0.1.1` is the first release carrying provenance. "Releasing" describes release-please plus OIDC
 plus automatic provenance, with no token and no flag. Point to
 `docs/trusted-publishing.md` for the reasoning and to
 `.claude/docs/references/publishing-trust.md` for the labeled findings.
@@ -1156,14 +1858,17 @@ git push -u origin docs/close-publishing-migration
 gh pr create --fill && gh pr checks --watch && gh pr merge --squash --delete-branch
 ```
 
-- [ ] **Step 7: Delete the pre-rewrite clone**
+- [ ] **Step 7: Delete the pre-rewrite clone and the scratch mirror**
 
 ```bash
 rm -rf ~/dummies/pepito.pre-rewrite
 ```
 
-It is the last copy of the history the rewrite removed. Keeping it defeats the
-point of Task 6.
+Also delete the Task 6 scratch mirror, whose path was recorded in Task 6
+Step 9. Both are local copies of the pre-rewrite history. Note the limit of
+this step honestly: it removes the copies on this machine, not the ones GitHub
+retains in `pepito-archive` — those are covered by the standing constraint that
+the archive stays private, not by any command.
 
 ---
 
@@ -1176,3 +1881,9 @@ point of Task 6.
 - Correct the stale manual-publish fallback in `CONTRIBUTING.md`, which
   describes `npm login` as it behaved before npm moved to two-hour session
   tokens. Recorded in the spec as adjacent work.
+- Remove the corporate authorship from `pepito-archive`. It cannot be done:
+  the pull refs are immutable from the client. The archive stays private, and
+  that constraint is permanent rather than a step this plan completes.
+- Delete `pepito-archive`. Not proposed: it holds the `v0.1.0` tag as
+  published and the migration's evidence trail. Private is the control, not
+  deletion.

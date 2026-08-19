@@ -8,12 +8,14 @@ findings are counter-intuitive enough that an agent reasoning from first
 principles will "fix" the code back into a bug.
 
 **Provenance.** The full write-ups live in the evaluation repo this package
-was extracted from, in Spanish, under `../vbmmsw/docs/knowledge/`. Those
-files survive the migration, so the pointers stay valid; the Spanish
-filenames are the real filenames and are not translated. This file is a
-distillation for iterating pepito, not a translation of that corpus — go to
-the source when you need the reproduction command, the raw table or the test
-that pins the behaviour.
+was extracted from (`../vbmmsw`, private), in Spanish, under
+`../vbmmsw/docs/knowledge/`. Those files survive the migration, so the
+pointers stay valid; the Spanish filenames are the real filenames and are
+not translated. This file is a distillation for iterating pepito, not a
+translation of that corpus — go to the source when you need the
+reproduction command, the raw table or the test that pins the behaviour.
+Every `../vbmmsw/docs/knowledge/...` pointer below refers to that same
+private repository.
 
 **Labels.** Each finding is marked **measured** (observed, with its numbers)
 or **reasoned** (derived from the mechanism, never observed in this harness).

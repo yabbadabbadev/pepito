@@ -5,11 +5,11 @@ request descriptors and five async matchers over the traffic MSW observes.
 Published as `@yabbadabbadev/pepito` (npm). This repo contains ONLY the
 library, its docs and its CI/CD.
 
-Born in the evaluation repo `../vbmmsw` (the browser-mode-vs-jsdom experiment
-that produced the GO and the measured findings this package is built on) and
-extracted here with a clean history on 2026-08-17. Its real-world consumer
-lives in `../vbmmsw-consumer` («La Despensa») — that repo's CI is the
-acceptance suite.
+Born in the evaluation repo `../vbmmsw` (private; the browser-mode-vs-jsdom
+experiment that produced the GO and the measured findings this package is
+built on) and extracted here with a clean history on 2026-08-17. Its
+real-world consumer lives in `../vbmmsw-consumer` (private; «La Despensa») —
+that repo's CI is the acceptance suite.
 
 ## Status
 
@@ -88,7 +88,7 @@ execute (fresh subagent per task, review between tasks), and
 The agent-facing references in `.claude/docs/references/` are loaded on
 demand, not always: `measured-foundations.md` (the findings the design stands
 on, each labeled measured or reasoned, with pointers to the original evidence
-in `../vbmmsw/docs/knowledge/`) before touching the event listeners, the
+in `../vbmmsw/docs/knowledge/` — private) before touching the event listeners, the
 registry, the matchers or the storage cleanup; `build-tooling.md` before
 touching the build; `ai-collaboration.md` for the collaboration patterns this
 repo already runs on (context management, steering, verification,

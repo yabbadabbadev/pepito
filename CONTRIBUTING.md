@@ -41,8 +41,8 @@ npm run pack:local
 ```
 
 Copy the resulting `dist-pack/yabbadabbadev-pepito-0.1.0.tgz` into the
-consuming repo's own vendor directory — for example `../vbmmsw`'s
-`experiments/vendor/` or `../vbmmsw-consumer`'s `vendor/` — and reinstall
+consuming repo's own vendor directory — for example `../vbmmsw`'s (private)
+`experiments/vendor/` or `../vbmmsw-consumer`'s (private) `vendor/` — and reinstall
 there (`npm i`) so its lockfile picks up the new tarball's integrity hash.
 
 `dist-pack/` is gitignored in THIS repo: the tarball is a local build
@@ -213,7 +213,7 @@ git config --local user.name "Alex Fuentes"
 
 ### Post-publication
 
-Reference for when there's a real consumer: in `vbmmsw-consumer`, the
+Reference for when there's a real consumer: in `vbmmsw-consumer` (private), the
 dependency moves from `file:vendor/...` (the vendored tgz) to the published
 registry version (`"@yabbadabbadev/pepito": "^0.1.0"`), and `vendor/` gets
 deleted — it stops being needed once the package resolves from npm. That
