@@ -36,11 +36,27 @@ jobs:
       - name: Install package
         run: npm ci
 
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+
       - name: Install Chromium
-        # --with-deps also installs the system libraries Chromium needs on
-        # Ubuntu. `npm run setup` (plain playwright install) is for local
-        # use, where those system libraries already exist.
-        run: npx playwright install --with-deps chromium
+        # No --with-deps: ubuntu-latest already ships the system libraries
+        # Chromium needs, and --with-deps' apt-get update against the
+        # runner's mirror stalled for 19 minutes and hit timeout-minutes in
+        # run 32273966257, blocking the `quality` required check. `npm run
+        # setup` (plain playwright install) is for local use, where those
+        # system libraries already exist for the same reason. Not gated on
+        # the cache-hit output above: this install is a no-op when the
+        # browser is already cached, and gating it risks a cache hit with no
+        # browser underneath it.
+        run: npx playwright install chromium
 
       - name: Lint
         run: npm run lint
