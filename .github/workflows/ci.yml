@@ -5,6 +5,19 @@ name: ci
 # is enforced by vitest's coverage config, not by this workflow.
 on:
   pull_request:
+  # release-please opens its release PR with the default GITHUB_TOKEN, and a
+  # pull request created with that token does not trigger other workflows —
+  # so pull_request above never fires for it. Without this push trigger, a
+  # ruleset requiring the `quality` check on main would leave every release
+  # PR permanently unmergeable (the check could never report), with an
+  # unplanned admin bypass as the only escape. This produces a check run on
+  # the same head SHA the ruleset evaluates, scoped to the branches
+  # release-please-action creates (see branch-name.js in release-please:
+  # `release-please--branches--<target-branch>`, optionally with
+  # `--components--<name>` or `--groups--<name>` suffixes for multi-package
+  # setups).
+  push:
+    branches: ['release-please--**']
   workflow_dispatch:
 
 jobs:
