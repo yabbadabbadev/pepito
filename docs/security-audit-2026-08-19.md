@@ -17,9 +17,8 @@ is carried forward silently.
 **GO — for publishing the rewritten history as a new repository, not for
 making this repository public in place.** A separate measured finding
 (recorded in the spec, not repeated here as a literal string) is that GitHub
-retains `refs/pull/1/head` through `refs/pull/4/head` on this repository,
-immutable from the client, carrying corporate-domain authorship and one
-blob with an absolute home path. Dimension 9 below measures this directly,
+retains pull refs on this repository that carry pre-rewrite history and are
+immutable from the client. Dimension 9 below measures this directly,
 including the rejection that proves the refs cannot be rewritten. That
 finding is why the remediation is a fresh repository (Task 6/6B), with this
 repository renamed `pepito-archive` and kept **private permanently** — not a
@@ -279,7 +278,7 @@ refs/remotes/pr/4
 
 `is-ancestor-of-main exit=1` means non-zero, i.e. **not** an ancestor: this
 blob is not reachable from `main`. It is reachable only from a since-rebased
-branch tip and from the retained pull ref `refs/pull/4/head` (dimension 9).
+branch tip and from a retained pull ref (dimension 9).
 `main`'s content is clean; the exposure lives entirely in the retained pull
 ref, which has a different remediation (a fresh repository, not a content
 edit) than a hit on `main` would have had.
@@ -501,42 +500,30 @@ remediation from "rewrite and force-push" to "publish a fresh repository."
 **Pull request refs — the one dirty surface:**
 
 ```
-$ git ls-remote origin 'refs/pull/*'
-61e5f5f22945bfca4f139f85edec077458a525ee  refs/pull/1/head
-33a1397237f160b55063939f24a0810d7c291e1e  refs/pull/2/head
-95e773d78886a0362ab5ca96d1dd329da2d403a9  refs/pull/3/head
-db6fb44fe53dbe42e5477ea91a7a05aef05537a8  refs/pull/4/head
 $ git fetch origin '+refs/pull/*/head:refs/remotes/pr/*'
 ```
 
-Counted with the same run-time-derived corporate-domain pattern as
-dimension 2 (never a literal in this file):
+The fetched refs carry pre-rewrite authorship and content history — the same
+history the mailmap rewrite (Task 6) is meant to leave behind. Counted with
+the same run-time-derived corporate-domain pattern as dimension 2 (never a
+literal in this file):
 
 ```
-$ for r in $(git for-each-ref --format='%(refname)' refs/remotes/pr); do
-    total=$(git rev-list --count "$r")
-    corp=$(git log --format='%ae%n%ce' "$r" | grep -icE "$CORP_DOMAINS")
-    echo "$r: total_commits=$total corp_domain_hits=$corp"
-  done
-refs/remotes/pr/1: total_commits=2 corp_domain_hits=4
-refs/remotes/pr/2: total_commits=15 corp_domain_hits=28
-refs/remotes/pr/3: total_commits=17 corp_domain_hits=30
-refs/remotes/pr/4: total_commits=27 corp_domain_hits=30
-
 $ git rev-list $(git for-each-ref --format='%(refname)' refs/remotes/pr) | sort -u | wc -l
 27
-$ # unique commits, across all four refs, carrying the corporate domain as author or committer:
+$ # unique commits, across all pull refs, carrying the corporate domain as author or committer:
 $ for r in $(git for-each-ref --format='%(refname)' refs/remotes/pr); do
     git log --format='%H %ae%n%H %ce' "$r"
   done | grep -iE "$CORP_DOMAINS" | awk '{print $1}' | sort -u | wc -l
 15
 ```
 
-27 unique commits are reachable across the four pull refs; 15 of those 27
-carry the corporate email domain as author and/or committer — matching the
-"up to 15 commits" the spec's reconnaissance recorded. Dimension 3's home-
-path blob is reachable from `refs/pull/4/head`. This is the exposure `main`
-does not have (dimension 2) but the pull refs do, and it is immutable:
+27 unique commits are reachable across the pull refs; 15 of those 27 carry
+the corporate email domain as author and/or committer — matching the "up to
+15 commits" the spec's reconnaissance recorded. The pull refs also retain
+dimension 3's home-path blob, which is not reachable from `main`. This is
+the exposure `main` does not have (dimension 2) but the pull refs do, and it
+is immutable:
 
 ```
 $ git push --force origin refs/remotes/pr/1:refs/pull/1/head
