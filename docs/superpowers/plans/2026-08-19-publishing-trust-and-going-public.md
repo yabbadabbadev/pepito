@@ -18,10 +18,9 @@ cutover once against the final repository.
 **Revised 2026-08-19.** Phase 1's code is merged and live; phase 1's cutover
 (Task 4) was never executed. Phase 2's original remediation — rewrite `main`,
 force-push here, flip this repository public — is invalidated by a measured
-finding: GitHub retains `refs/pull/1/head` through `refs/pull/4/head`, they
-carry the corporate authorship, and they cannot be rewritten from the client.
-See the spec's Findings section and the revised execution order below before
-running anything numbered 4 or higher.
+finding: GitHub retains pull refs that carry pre-rewrite history and cannot be
+rewritten from the client. See the spec's Findings section and the revised
+execution order below before running anything numbered 4 or higher.
 
 **Tech Stack:** GitHub Actions, `googleapis/release-please-action` v5, npm
 trusted publishing (OIDC), `gitleaks`, `git-filter-repo`, `gh` CLI.
@@ -520,8 +519,7 @@ validation release is gone from Task 8 — it would prove nothing `0.1.1` does
 not, and npm gets configured once instead of twice.
 
 **Standing constraint, no expiry:** `pepito-archive` must never be made
-public. It retains the pull refs carrying a corporate email address and one
-blob with an absolute home path; those refs are immutable from the client, so
+public. It retains pre-rewrite history through refs the client cannot modify;
 visibility is the only control that exists. Any later task, audit or
 maintainer inheriting this repository is bound by this.
 
@@ -1070,9 +1068,8 @@ npm view @yabbadabbadev/pepito@0.1.0 --json | node -e "const p=JSON.parse(requir
 
 Expected, per the reviewer who found this gap and checked most of it: PR
 titles and bodies, issues, run logs, description, topics, tags and the
-published `0.1.0` tarball all clean; the pull refs **not** clean, carrying up
-to 15 commits authored with a corporate domain plus one blob with an absolute
-home path. Record that the refs are immutable from the client:
+published `0.1.0` tarball all clean; the pull refs **not** clean, retaining
+pre-rewrite history. Record that the refs are immutable from the client:
 
 ```bash
 git push --force origin refs/remotes/pr/1:refs/pull/1/head
@@ -1305,14 +1302,12 @@ rename, create or push on the human's behalf.**
 
 - [ ] **Step 1: Confirm the standing constraint out loud, before anything moves**
 
-`pepito-archive` must never be made public. It retains `refs/pull/1/head`
-through `refs/pull/4/head`, which carry commits authored with a corporate email
-address and one blob with an absolute home path; those refs are immutable from
-the client, so visibility is the only control that exists. State this to the
-human and get an explicit acknowledgement before the rename. It is not a
-passing remark: it is the whole reason the archive stays where it is instead of
-being deleted, and the reason deleting it is also not proposed — the `v0.1.0`
-tag and the migration's evidence trail live there.
+`pepito-archive` must never be made public. It retains pre-rewrite history
+through refs the client cannot modify, so visibility is the only control that
+exists. State this to the human and get an explicit acknowledgement before the
+rename. It is not a passing remark: it is the whole reason the archive stays
+where it is instead of being deleted, and the reason deleting it is also not
+proposed — the `v0.1.0` tag and the migration's evidence trail live there.
 
 - [ ] **Step 2: Ask the human to rename this repository — human-gated**
 

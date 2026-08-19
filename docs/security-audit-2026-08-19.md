@@ -17,9 +17,8 @@ is carried forward silently.
 **GO — for publishing the rewritten history as a new repository, not for
 making this repository public in place.** A separate measured finding
 (recorded in the spec, not repeated here as a literal string) is that GitHub
-retains `refs/pull/1/head` through `refs/pull/4/head` on this repository,
-immutable from the client, carrying corporate-domain authorship and one
-blob with an absolute home path. Dimension 9 below measures this directly,
+retains pull refs on this repository that carry pre-rewrite history and are
+immutable from the client. Dimension 9 below measures this directly,
 including the rejection that proves the refs cannot be rewritten. That
 finding is why the remediation is a fresh repository (Task 6/6B), with this
 repository renamed `pepito-archive` and kept **private permanently** — not a
