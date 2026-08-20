@@ -13,12 +13,12 @@ that repo's CI is the acceptance suite.
 
 ## Status
 
-| Phase              | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Migration spec     | written: `docs/superpowers/specs/2026-08-17-standalone-repo-design.md`                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| Migration plan     | written: `docs/superpowers/plans/2026-08-17-standalone-repo.md`                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Execution          | **Done** (2026-08-17): all 7 tasks executed and merged. Library green (67/67 tests, 99.56%/96.66% coverage), CI/CD in place, full English translation, agent-facing references written; migration PR #2 merged here with CI green, `vbmmsw` #19 and `vbmmsw-consumer` #11 merged. `v0.1.0` published to npm without `--provenance` — the repo is private and the registry rejects provenance from private sources; the flag returns when the repo goes public (see Releasing and ROADMAP). |
-| Trusted publishing | **Phase 1 in flight** (2026-08-19): `release-please` plus OIDC replace the tagged, token-based publish. `release.yml` written, `publish.yml` deleted, docs rewritten; not yet exercised by a real merge to `main` — that first real run is the acceptance evidence, still pending.                                                                                                                                                                                                         |
+| Phase              | State                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Migration spec     | written: `docs/superpowers/specs/2026-08-17-standalone-repo-design.md`                                                                                                                                                                                                                                                                                                                                                                                        |
+| Migration plan     | written: `docs/superpowers/plans/2026-08-17-standalone-repo.md`                                                                                                                                                                                                                                                                                                                                                                                               |
+| Execution          | **Done** (2026-08-17): all 7 tasks executed and merged. Library green (67/67 tests, 99.56%/96.66% coverage), CI/CD in place, full English translation, agent-facing references written; migration PR #2 merged here with CI green, `vbmmsw` #19 and `vbmmsw-consumer` #11 merged. `v0.1.0` published to npm without `--provenance` — the repo was private then.                                                                                               |
+| Trusted publishing | **Done** (2026-08-20): `release-please` plus OIDC replaced the tagged, token-based publish, and the repository moved to a fresh public one. `0.1.1` published with provenance, verified against the registry: `latest`, `dist.attestations` carries a `https://slsa.dev/provenance/v1` predicate, `npm audit signatures` reports verified signatures and attestations. No long-lived publishing credential exists — the `NPM_TOKEN` was removed, not rotated. |
 
 ## Non-negotiable rules
 
@@ -97,11 +97,12 @@ anti-patterns), distilled from `/ai-patterns`.
 ## Releasing
 
 `CONTRIBUTING.md` carries the runbook. `release-please` keeps a release PR
-open on `main`; merging it creates the tag and triggers the publish job in
-the same `.github/workflows/release.yml`, authenticating with OIDC against a
-trusted publisher registered on npmjs.com — no token, no secret, ever.
-`--provenance` is never passed: with trusted publishing the registry attaches
-provenance automatically, and it starts doing so the day this repo goes
-public (see ROADMAP) — no workflow change needed on that day. See
+open on `main`; the bot's PR needs a manual workflow approval before its
+`quality` check can even run (`gh api -X POST .../actions/runs/<id>/approve`
+or the Actions UI) — merging it then creates the tag and triggers the
+publish job in the same `.github/workflows/release.yml`, authenticating with
+OIDC against a trusted publisher registered on npmjs.com — no token, no
+secret, ever. `--provenance` is never passed: this repo is public and the
+registry attaches provenance automatically, proven by `0.1.1`. See
 `docs/trusted-publishing.md` for the reasoning and
 `.claude/docs/references/publishing-trust.md` for the sourced findings.
