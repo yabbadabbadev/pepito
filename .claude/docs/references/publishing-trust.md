@@ -110,3 +110,73 @@ repo's previous `NPM_TOKEN` was) are capped at a 90-day maximum lifetime.
 This is why the previous mechanism carried an expiry clock rather than a
 mere deprecation warning: the token this repo used was never going to work
 indefinitely, regardless of whether this migration happened.
+
+## 9. The release PR needs a manual workflow approval, every time
+
+**Measured (this repo, 2026-08-20).** Source: the `0.1.1` release run.
+
+Workflow runs triggered by `github-actions[bot]`'s release PR arrive in
+state `action_required`, not queued or running — GitHub withholds them
+pending a human approval, the same gate it applies to first-time external
+contributors. Until someone approves the run, the required `quality` check
+never reports, and the branch ruleset that requires it blocks the merge: the
+release PR simply sits there looking broken, with nothing in the PR itself
+explaining why. Approving it: `gh api -X POST
+repos/<org>/<repo>/actions/runs/<run_id>/approve`, or the "Approve and run"
+button in the Actions UI. This is a per-release human step — it recurs on
+every release, not just the first — and until this finding it was not
+written down anywhere.
+
+## 10. The `push` trigger on `ci.yml` does not cover the case it was built for
+
+**Measured (this repo, 2026-08-20).** Source: runs observed on the release
+branch during the `0.1.1` release.
+
+The trigger was added on the premise that a pull request opened with
+`GITHUB_TOKEN` does not trigger workflows, so a `push` trigger on
+release-please's branches would produce the `quality` check that
+`pull_request` could not. What was actually observed contradicts half of
+that premise: the release PR's _creation_ did trigger `ci.yml`, through the
+ordinary `pull_request` event — `GITHUB_TOKEN`'s restriction turned out not
+to block that. But when the bot later _updates_ its own branch (pushing a
+new commit onto an already-open release PR), nothing triggers at all: not
+`pull_request` (no new PR is opened), and not this `push` trigger either,
+because that update is also pushed with `GITHUB_TOKEN`. The trigger is
+therefore a useful escape hatch for a human pushing to a matching branch
+name, not the guarantee it was designed to provide — the actual guarantee
+that the release PR's check eventually reports is finding 9's manual
+workflow-run approval.
+
+## 11. The release branch name carries a `--components--` suffix
+
+**Measured (this repo, 2026-08-20).** Source: the branch name of the
+`0.1.1` release PR.
+
+The branch release-please opened was
+`release-please--branches--main--components--pepito`, with a
+`--components--pepito` suffix, even though this is a single-package
+repository. A prior verification (2026-08-19, reading release-please's
+`branch-name.js` source) had explicitly ruled the suffix out for a root
+single-package setup. `ci.yml`'s `push` trigger glob (`release-please--**`)
+still matches the longer name, so nothing broke — but the glob must not be
+narrowed to the shorter form the earlier reading predicted, since the
+suffix is real.
+
+## 12. `workflow_dispatch` on `ci.yml` is deliberate, and asymmetric with the publishing workflow
+
+**Measured (this repo, 2026-08-19–20).** Source: the trigger was used, as
+designed, to re-run the quality gate on the release branch when it was left
+with no reporting check.
+
+`workflow_dispatch` on `ci.yml` exists to re-run the quality gate against an
+arbitrary ref without fabricating a commit — the exact need that came up
+when the release PR's checks were stuck pending approval (finding 9).
+Removing it because the publishing workflow deliberately dropped the same
+trigger type (finding 5, `docs/trusted-publishing.md` on `workflow_dispatch`
+and `workflow_call` as npm's own documented trusted-publisher mismatch
+risks) would be a category error: `ci.yml` publishes nothing, holds no
+secret, and involves no OIDC identity, so its worst case from an arbitrary
+dispatch is spent Actions minutes, and only users with write access can
+dispatch it at all. On the publishing workflow the same trigger enters
+npm's trusted-publisher claim validation, which is what makes it a risk
+there and not here.

@@ -106,12 +106,51 @@ on `main` (via `release-please`), and merging it is what creates the tag and
 triggers the publish job in the same workflow file. Authentication is OIDC
 against a trusted publisher registered on npmjs.com — see
 `docs/trusted-publishing.md` for why that replaces a stored credential and
-what npm matches on.
+what npm matches on. This path is proven, not theoretical: `0.1.1` published
+this way on 2026-08-20, provenance attached automatically, verified against
+the registry.
 
 Commits on `main` must follow [Conventional Commits](https://www.conventionalcommits.org/),
 because that's what release-please reads to decide whether a release PR is
 needed at all: `feat:` and `fix:` commits produce one; `docs:`, `ci:`,
 `chore:` and `refactor:` commits do not touch the release PR.
+
+### What a maintainer actually does, in order
+
+1. Merge a `feat:` or `fix:` commit (or a `Release-As:` commit, see below) to
+   `main`. `release-please` opens or updates a release PR carrying the
+   version bump and the CHANGELOG entry.
+2. **Approve the workflow run on that PR.** `github-actions[bot]` cannot
+   trigger a run past GitHub's own gate for it: the run lands in state
+   `action_required`, and the required `quality` check never reports until
+   a human approves it — the branch ruleset then blocks the merge with no
+   obvious explanation. Approve it either in the Actions UI ("Approve and
+   run") or with:
+
+   ```bash
+   gh api -X POST repos/yabbadabbadev/pepito/actions/runs/<run_id>/approve
+   ```
+
+   This is a per-release step. It recurs on every release, not just the
+   first one, and nothing in the PR itself explains why it is stuck without
+   this.
+
+3. Edit the CHANGELOG prose in the release PR if the generated entries need
+   it (see "Editing the CHANGELOG" below) — this is the only point where
+   that's a normal edit rather than a follow-up PR.
+4. Once `quality` is green, merge the release PR. The merge creates the tag
+   and starts the `publish` job in the same workflow run.
+5. **Approve the `npm-publish` environment.** The publish job waits for the
+   environment's required reviewer before it runs `npm publish` — this is
+   the human gate trusted publishing does not remove (see
+   `docs/trusted-publishing.md`). Approve it from the workflow run's page.
+6. Verify the publish landed: `npm view @yabbadabbadev/pepito version`
+   should show the new version as `latest`, and `npm audit signatures
+@yabbadabbadev/pepito` should report verified registry signatures and
+   verified attestations.
+
+A maintainer who skips step 2 sees a release PR that looks permanently
+stuck; skipping step 5 is not possible, since the workflow simply waits.
 
 ### The documentation-only release
 
@@ -152,6 +191,13 @@ always reads better than a concatenation of commit messages. Edit the
 CHANGELOG in the release PR, before merging it — once the release exists,
 editing the CHANGELOG is a separate follow-up PR, not a rewrite of history.
 
+`CHANGELOG.md` is listed in `.prettierignore` and is not part of
+`npm run format:check`: Prettier's markdown bullet-style normalisation isn't
+configurable, so a generated CHANGELOG could never satisfy `prettier
+--check .` on its own terms. Editing it by hand in the release PR is
+unaffected by this — it's a statement about CI, not about the file being
+off-limits.
+
 ### Preparation (once, from any machine)
 
 1. Enable Settings → Actions → General → "Allow GitHub Actions to create and
@@ -175,14 +221,14 @@ editing the CHANGELOG is a separate follow-up PR, not a rewrite of history.
 There is no token to create and no secret to store — `gh secret set
 NPM_TOKEN` is no longer part of this repo's setup.
 
-### Emergency publish, until OIDC is proven
+### Emergency publish, if OIDC is rejected
 
 `workflow_dispatch` and the manual-publish path are gone along with
 `publish.yml`: the only documented way to publish is the automated OIDC
-flow above. Until one real release has gone through it successfully, there
-is a window with no fallback documented anywhere else, so if OIDC is
-rejected (misconfigured trusted publisher, npm-side outage, or similar),
-publish by hand from a clean checkout:
+flow above, and it is proven — `0.1.1` went through it successfully on
+2026-08-20. There is still no fallback workflow, so if OIDC is ever
+rejected on a later release (misconfigured trusted publisher, npm-side
+outage, or similar), publish by hand from a clean checkout:
 
 ```bash
 git clone https://github.com/yabbadabbadev/pepito.git
