@@ -2,10 +2,13 @@
 
 ## [0.1.1](https://github.com/yabbadabbadev/pepito/compare/v0.1.0...v0.1.1) (2026-08-20)
 
+Nothing changed for consumers of this package: no new API, no fix, no
+behaviour change. `0.1.1` exists to exercise the publishing path end to end,
+and it is the first release published from a public repository, so it is the
+first to carry a provenance attestation.
 
-### Miscellaneous Chores
-
-* release 0.1.1 ([#3](https://github.com/yabbadabbadev/pepito/issues/3)) ([b53d1e2](https://github.com/yabbadabbadev/pepito/commit/b53d1e26e0846a20e6a1c15c8ef4780cfadc243c))
+If you are on `0.1.0`, there is no reason to upgrade beyond wanting the
+attestation.
 
 ## 0.1.0 — 2026-08-14
 
