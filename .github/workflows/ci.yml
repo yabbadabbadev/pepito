@@ -5,19 +5,36 @@ name: ci
 # is enforced by vitest's coverage config, not by this workflow.
 on:
   pull_request:
-  # release-please opens its release PR with the default GITHUB_TOKEN, and a
-  # pull request created with that token does not trigger other workflows —
-  # so pull_request above never fires for it. Without this push trigger, a
-  # ruleset requiring the `quality` check on main would leave every release
-  # PR permanently unmergeable (the check could never report), with an
-  # unplanned admin bypass as the only escape. This produces a check run on
-  # the same head SHA the ruleset evaluates, scoped to the branches
-  # release-please-action creates (see branch-name.js in release-please:
-  # `release-please--branches--<target-branch>`, optionally with
-  # `--components--<name>` or `--groups--<name>` suffixes for multi-package
-  # setups).
+  # Measured 2026-08-20: the premise this trigger was built on was only half
+  # right. The release PR's CREATION does trigger ci.yml through the
+  # pull_request event above, even though release-please opens it with the
+  # default GITHUB_TOKEN — GITHUB_TOKEN only blocks triggers on refs/commits
+  # IT pushes, not on the pull_request event itself. What GITHUB_TOKEN does
+  # block is any later push the bot makes to update its own branch (a new
+  # commit added to an existing release PR): that push fires neither
+  # pull_request nor, it turns out, this push trigger, since that push is
+  # also made with GITHUB_TOKEN. So this trigger is a human-push escape
+  # hatch, not the guarantee it was designed to be — the actual guarantee
+  # that the release PR's `quality` check eventually reports is the manual
+  # workflow-run approval documented in CONTRIBUTING.md (runs for the bot's
+  # PR land in `action_required` until a human approves them). This trigger
+  # still earns its keep on any human push to a matching branch. It's scoped
+  # to the branches release-please-action creates (see branch-name.js in
+  # release-please: `release-please--branches--<target-branch>`); measured
+  # in this repo, that name also carries a `--components--<name>` suffix
+  # even for a single-package repo, which the glob below still matches.
   push:
     branches: ['release-please--**']
+  # Deliberate, do not remove: re-runs the quality gate against an arbitrary
+  # ref with no fabricated commit, and was used for exactly that when a
+  # release PR was left with no check. Harmless here in a way it would not
+  # be on the publish workflow: this workflow publishes nothing, holds no
+  # secret and involves no OIDC identity, and only users with write access
+  # can dispatch it, so the worst case is spent Actions minutes. On the
+  # publishing workflow the same trigger is a documented npm trusted-
+  # publisher validation mismatch risk, because it enters npm's OIDC claim
+  # validation — that is why it was deliberately removed from that path
+  # rather than kept for symmetry with this one.
   workflow_dispatch:
 
 jobs:
