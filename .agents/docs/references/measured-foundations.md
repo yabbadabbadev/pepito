@@ -503,7 +503,7 @@ The mechanism, two upstream failures compounding:
 
 Where it bites: any browser-mode project under a directory containing `+`
 (and presumably `%` or spaces — unmeasured). The case that exposed it:
-**Claude Code worktrees map a branch `feat/x` to the directory `feat+x`, so
+**Agent worktrees map a branch `feat/x` to the directory `feat+x`, so
 any worktree of a branch with a `/` in its name reproduces the hang.** Use
 branch names without `/` when working in a worktree.
 

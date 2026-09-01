@@ -11,7 +11,7 @@ absence of one.
 ## The rationale, verbatim from the spec
 
 > **Build stays `tsc`** — deliberate, recorded in
-> `.claude/docs/references/build-tooling.md`: tsc emits the `.d.ts` half of
+> `.agents/docs/references/build-tooling.md`: tsc emits the `.d.ts` half of
 > the product with the same compiler that type-checks (single source of
 > truth); SWC/esbuild are transpile-only (no declarations → second toolchain +
 > drift risk) and solve a speed problem a ~15-module lib doesn't have;
