@@ -40,7 +40,7 @@ function isSameOriginPath(path: string): boolean {
  * applied with `history.pushState` BEFORE render because the application's
  * `BrowserRouter` reads the URL on mount and only listens to `popstate`
  * afterwards (measured — see
- * `.claude/docs/references/measured-foundations.md`). The URI can carry
+ * `.agents/docs/references/measured-foundations.md`). The URI can carry
  * query and hash: they flow through the router the same as the path.
  * `setupNetwork()` restores the original URL in its `afterEach`, so every
  * test starts from the same route regardless of what the previous one

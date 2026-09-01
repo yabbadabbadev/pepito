@@ -32,7 +32,7 @@ that repo's CI is the acceptance suite.
   findings — don't regress into guessing. A meter that cannot measure must go
   red and carry its evidence.
 - **Measured vs assumed stays labeled.** Findings get written down in
-  `.claude/docs/references/` (agent-facing) or `docs/` (user-facing) the
+  `.agents/docs/references/` (agent-facing) or `docs/` (user-facing) the
   moment they're made.
 - **The quality harness is not optional**: strict TS (`strict`,
   `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`), ESLint
@@ -85,7 +85,7 @@ new, `writing-plans` before implementing, `subagent-driven-development` to
 execute (fresh subagent per task, review between tasks), and
 `verification-before-completion` — command plus output, never intention.
 
-The agent-facing references in `.claude/docs/references/` are loaded on
+The agent-facing references in `.agents/docs/references/` are loaded on
 demand, not always: `measured-foundations.md` (the findings the design stands
 on, each labeled measured or reasoned, with pointers to the original evidence
 in `../vbmmsw/docs/knowledge/` — private) before touching the event listeners, the
@@ -105,4 +105,4 @@ OIDC against a trusted publisher registered on npmjs.com — no token, no
 secret, ever. `--provenance` is never passed: this repo is public and the
 registry attaches provenance automatically, proven by `0.1.1`. See
 `docs/trusted-publishing.md` for the reasoning and
-`.claude/docs/references/publishing-trust.md` for the sourced findings.
+`.agents/docs/references/publishing-trust.md` for the sourced findings.

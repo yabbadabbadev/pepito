@@ -3,7 +3,7 @@
  * land on the same worker: `localStorage`, `sessionStorage` and cookies
  * belong to the origin, not the document, so they survive per-file
  * isolation (measured — see
- * `.claude/docs/references/measured-foundations.md`).
+ * `.agents/docs/references/measured-foundations.md`).
  *
  * Each cookie is expired twice per name: once with `path=/` (the one most
  * application code sets) and once with no `path` attribute, in case one was
@@ -16,7 +16,7 @@
  *
  * Measured that it doesn't, in this harness (Chromium via Playwright,
  * `vitest@4.1.10`): the order has no observable effect today — full
- * evidence in `.claude/docs/references/measured-foundations.md`. The order
+ * evidence in `.agents/docs/references/measured-foundations.md`. The order
  * is kept anyway, at no cost, in case some future runner or browser does
  * follow the simulated URL.
  *

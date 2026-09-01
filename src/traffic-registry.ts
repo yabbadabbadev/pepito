@@ -1,7 +1,7 @@
 /**
  * Traffic entry as it lives in the registry while the test runs: `body` and
  * `responseBody` are promises because they can only be read once (measured
- * — see `.claude/docs/references/measured-foundations.md`) and are stored
+ * — see `.agents/docs/references/measured-foundations.md`) and are stored
  * without awaiting, so as not to block the `request:start` listener that
  * opens them.
  */
@@ -39,7 +39,7 @@ const pending = new Set<string>()
 
 /**
  * Opens a traffic entry with what can only be read at `request:start`
- * (measured — see `.claude/docs/references/measured-foundations.md`) and
+ * (measured — see `.agents/docs/references/measured-foundations.md`) and
  * marks it in flight.
  * `watchNetwork` (msw-events.ts) is the only caller.
  */
@@ -152,7 +152,7 @@ export const QUIESCENCE_TIMEOUT_MS = 4000
  * in the same tick as the call hasn't yet crossed the real round trip to
  * the service worker that registers its `request:start`, so this function
  * reads the counter at zero by construction, not by actual absence (see
- * `.claude/docs/references/measured-foundations.md`). Whoever needs to
+ * `.agents/docs/references/measured-foundations.md`). Whoever needs to
  * assert an absence or count with precision must go through
  * `snapshotAfterIdle` in `pepito/src/matchers.ts`, which closes that window
  * with a two-observation stability condition; calling this function
