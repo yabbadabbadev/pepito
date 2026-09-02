@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/yabbadabbadev/pepito/compare/v0.1.1...v0.2.0) (2026-09-02)
+
+
+### Features
+
+* framework-agnostic core + subpath adapters for /react, /vue, /svelte ([#9](https://github.com/yabbadabbadev/pepito/issues/9)) ([2a1ab74](https://github.com/yabbadabbadev/pepito/commit/2a1ab74274d8c8ac03980f368cde8260c7330f3a))
+
 ## [0.1.1](https://github.com/yabbadabbadev/pepito/compare/v0.1.0...v0.1.1) (2026-08-20)
 
 Nothing changed for consumers of this package: no new API, no fix, no
