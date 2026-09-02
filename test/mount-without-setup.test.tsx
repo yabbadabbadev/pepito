@@ -1,4 +1,4 @@
-import { mount } from '../src'
+import { mount } from '../src/react'
 import { RoutedApp } from './routed-app'
 
 test('mount without setupNetwork fails with the fix instruction', async () => {

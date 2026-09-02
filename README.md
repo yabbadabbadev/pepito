@@ -8,21 +8,20 @@ matchers to query it.
 
 ## 1. Install and start
 
-`react`, `react-dom`, `vitest`, `msw` and `vitest-browser-react` are
-**peerDependencies**: install them if your project doesn't already have
-them.
+`vitest` and `msw` are **peerDependencies**: install them if your project
+doesn't already have them.
+
+### Core (any framework)
+
+The core — `setupNetwork`, matchers, request descriptors, `network.log()` —
+works without any framework adapter.
 
 ```bash
-npm i -D @yabbadabbadev/pepito msw vitest-browser-react
+npm i -D @yabbadabbadev/pepito msw
 npx msw init public --save
 ```
 
-`npx msw init public --save` generates the service worker MSW needs in
-browser mode (`public/mockServiceWorker.js`); it's a one-off, not a
-day-to-day step — it's only repeated when upgrading MSW's version.
-
-Call `setupNetwork` once, in a `setupFiles` file of `vitest.config` — never
-inside a test:
+Call `setupNetwork` once, in a `setupFiles` file of `vitest.config`:
 
 ```ts
 // vitest.setup.ts
@@ -42,6 +41,70 @@ export default defineConfig({
 })
 ```
 
+### React
+
+```bash
+npm i -D @yabbadabbadev/pepito msw vitest-browser-react
+npx msw init public --save
+```
+
+```tsx
+import { mount } from '@yabbadabbadev/pepito/react'
+import { App } from '../src/App'
+
+const screen = await mount(<App />, { path: '/products' })
+```
+
+### Vue
+
+```bash
+npm i -D @yabbadabbadev/pepito msw vitest-browser-vue
+npx msw init public --save
+```
+
+```ts
+import { mount } from '@yabbadabbadev/pepito/vue'
+import App from '../src/App.vue'
+
+const screen = await mount(App, { path: '/products' })
+```
+
+### Svelte
+
+```bash
+npm i -D @yabbadabbadev/pepito msw vitest-browser-svelte
+npx msw init public --save
+```
+
+```ts
+import { mount } from '@yabbadabbadev/pepito/svelte'
+import App from '../src/App.svelte'
+
+const screen = await mount(App, { path: '/products' })
+```
+
+### Custom framework adapter
+
+If you use a framework without an official subpath (Lit, Preact, Angular,
+Solid, …), build your own adapter with `mountCore`:
+
+```ts
+import { render } from 'vitest-browser-lit'
+import { mountCore } from '@yabbadabbadev/pepito'
+
+export function mount(
+  component: unknown,
+  options?: Parameters<typeof mountCore>[2],
+) {
+  return mountCore(component, (c) => render(c as any), options)
+}
+```
+
+`mountCore` applies `pushState` for routing and registers test-specific
+MSW handlers before calling your `render` function. Its return type is
+generic: it infers the full typed result from whatever your `render`
+returns.
+
 `setupNetwork`'s second argument passes straight through to
 `worker.start()`, with no wrapper of its own — for example, to make a
 request with no handler fail the test instead of just warning on the
@@ -55,23 +118,26 @@ import { handlers } from './handlers'
 setupNetwork(handlers, { onUnhandledRequest: 'error' })
 ```
 
-Importing anything from `pepito` — here, `setupNetwork` — already brings the
-network matchers along as `expect` types: there's no separate type
-registration. If your test `tsconfig` doesn't include the setup file, `tsc`
-won't see the augmentation and `expect(...).toHaveBeenRequested()` will
-raise `TS2339` even though the test passes at runtime.
+Importing anything from `pepito` — even just `setupNetwork` — already
+brings the network matchers along as `expect` types: there's no separate
+type registration. If your test `tsconfig` doesn't include the setup
+file, `tsc` won't see the augmentation and
+`expect(...).toHaveBeenRequested()` will raise `TS2339` even though the
+test passes at runtime.
 
 ## 2. Mount the application
 
-`mount` mounts with `vitest-browser-react` and returns its `screen`
-unwrapped. It requires `setupNetwork` to have run first (section 1), **even
-for a test with no network**: the coupling is deliberate — `mount` also
-installs URL and storage cleanup between tests, not just the network — and
-if it's missing, it fails immediately with a fix instruction.
+`mount` (from `@yabbadabbadev/pepito/react`) mounts with
+`vitest-browser-react` and returns its `screen` unwrapped. It requires
+`setupNetwork` to have run first (section 1), **even for a test with no
+network**: the coupling is deliberate — `mount` also installs URL and
+storage cleanup between tests, not just the network — and if it's missing,
+it fails immediately with a fix instruction.
 
 ```tsx
 import { http, HttpResponse } from 'msw'
-import { mount, get } from '@yabbadabbadev/pepito'
+import { get } from '@yabbadabbadev/pepito'
+import { mount } from '@yabbadabbadev/pepito/react'
 import { App } from '../src/App'
 import { ProductListMother } from '../test/mothers/product-list-mother'
 
@@ -102,7 +168,7 @@ route, and `setupNetwork()` undoes them afterwards in its `afterEach`.
 Neither option is required — `mount(<App />)` on its own just mounts:
 
 ```tsx
-import { mount } from '@yabbadabbadev/pepito'
+import { mount } from '@yabbadabbadev/pepito/react'
 import { App } from '../src/App'
 
 test('mounts with no path or network of its own', async () => {

@@ -12,7 +12,8 @@ time, so the request falls through to the next handler in the list:
 
 ```tsx
 import { http, HttpResponse } from 'msw'
-import { get, mount } from '@yabbadabbadev/pepito'
+import { get } from '@yabbadabbadev/pepito'
+import { mount } from '@yabbadabbadev/pepito/react'
 import { App } from '../src/App'
 import { ProductListMother } from '../test/mothers/product-list-mother'
 
@@ -159,7 +160,8 @@ specific text. `network.idle()` waits with the same mechanism the network
 matchers use, without asserting anything:
 
 ```tsx
-import { mount, network } from '@yabbadabbadev/pepito'
+import { network } from '@yabbadabbadev/pepito'
+import { mount } from '@yabbadabbadev/pepito/react'
 import { App } from '../src/App'
 
 test('the catalog does not change visually', async () => {
