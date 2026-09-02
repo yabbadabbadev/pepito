@@ -23,17 +23,21 @@
 - Quality harness is not optional: run `npm run typecheck && npm run lint && npm run format:check && npm run coverage` after implementation
 
 ---
+
 ### Task 1: Rename `mount.ts` → `mount-core.ts` with generic signature
 
 **Files:**
+
 - Create: `src/mount-core.ts` (rename + modify from `src/mount.ts`)
 - Modify: `src/mount.ts` (delete after creation verified)
 
 **Interfaces:**
+
 - Consumes: `requireNetworkContext` from `./network-singleton`
 - Produces: `mountCore<T>(component, render, options?) → Promise<T>`, `MountOptions`, `MountResult`
 
 **What changes from the current `mount.ts`:**
+
 - `ui: ReactElement` → `component: unknown`
 - Second parameter becomes `render: (component: unknown) => T | Promise<T>` (generic)
 - `MountOptions` stays the same (`path`, `network`)
@@ -50,7 +54,7 @@
 
 - [ ] **Step 2: Create `src/mount-core.ts`**
 
-```ts
+````ts
 import type { RequestHandler } from 'msw'
 import { requireNetworkContext } from './network-singleton'
 
@@ -111,8 +115,10 @@ export async function mountCore<T extends MountResult>(
 
   if (path !== undefined && !isSameOriginPath(path)) {
     throw new Error(
-      'pepito: path must be a same-origin URI that starts with \'/\'; ' +
-        'received: ' + String(path) + '. A different origin is mocked in the MSW ' +
+      "pepito: path must be a same-origin URI that starts with '/'; " +
+        'received: ' +
+        String(path) +
+        '. A different origin is mocked in the MSW ' +
         'handlers, not in the mount.',
     )
   }
@@ -126,7 +132,7 @@ export async function mountCore<T extends MountResult>(
 
   return await Promise.resolve(render(component))
 }
-```
+````
 
 - [ ] **Step 3: Verify `src/mount-core.ts` typechecks and lints clean**
 
@@ -136,11 +142,14 @@ Expected: PASS (no errors)
 - [ ] **Step 4: Update `src/index.ts` core barrel BEFORE deleting mount.ts**
 
 Read the current `src/index.ts`. Replace lines 7-8:
+
 ```ts
 export { mount } from './mount'
 export type { MountOptions } from './mount'
 ```
+
 with:
+
 ```ts
 export { mountCore } from './mount-core'
 export type { MountOptions, MountResult } from './mount-core'
@@ -174,15 +183,17 @@ git commit -m "refactor: extract generic mountCore from React-specific mount"
 ### Task 2: Create `/react` subpath
 
 **Files:**
+
 - Create: `src/react.ts`
 
 **Interfaces:**
+
 - Consumes: `mountCore`, `MountOptions` from `./mount-core`
 - Produces: `mount(ui: ReactElement, options?: MountOptions) → Promise<RenderResult>`
 
 - [ ] **Step 1: Create `src/react.ts`**
 
-```ts
+````ts
 import type { ReactElement } from 'react'
 import { render, type RenderResult } from 'vitest-browser-react'
 import { mountCore } from './mount-core'
@@ -218,7 +229,7 @@ export async function mount(
 ): Promise<RenderResult> {
   return mountCore(ui, (c) => render(c as ReactElement), options)
 }
-```
+````
 
 - [ ] **Step 2: Verify it typechecks and lints**
 
@@ -261,15 +272,17 @@ git commit -m "feat: add /react subpath with mount wrapper"
 ### Task 3: Create `/vue` subpath
 
 **Files:**
+
 - Create: `src/vue.ts`
 
 **Interfaces:**
+
 - Consumes: `mountCore`, `MountOptions` from `./mount-core`
 - Produces: `mount(component, options?) → Promise<RenderResult>`
 
 - [ ] **Step 1: Create `src/vue.ts`**
 
-```ts
+````ts
 import { render, type RenderResult } from 'vitest-browser-vue'
 import { mountCore } from './mount-core'
 import type { MountOptions } from './mount-core'
@@ -304,7 +317,7 @@ export async function mount(
     options,
   )
 }
-```
+````
 
 - [ ] **Step 2: Verify it typechecks and lints**
 
@@ -323,15 +336,17 @@ git commit -m "feat: add /vue subpath with mount wrapper"
 ### Task 4: Create `/svelte` subpath
 
 **Files:**
+
 - Create: `src/svelte.ts`
 
 **Interfaces:**
+
 - Consumes: `mountCore`, `MountOptions` from `./mount-core`
 - Produces: `mount(component, options?) → Promise<RenderResult>`
 
 - [ ] **Step 1: Create `src/svelte.ts`**
 
-```ts
+````ts
 import { render, type RenderResult } from 'vitest-browser-svelte'
 import { mountCore } from './mount-core'
 import type { MountOptions } from './mount-core'
@@ -366,7 +381,7 @@ export async function mount(
     options,
   )
 }
-```
+````
 
 - [ ] **Step 2: Verify it typechecks and lints**
 
@@ -385,6 +400,7 @@ git commit -m "feat: add /svelte subpath with mount wrapper"
 ### Task 5: Update `package.json` -- peerDeps and exports map
 
 **Files:**
+
 - Modify: `package.json`
 
 - [ ] **Step 1: Read the current `package.json` to confirm exact peerDependencies and exports**
@@ -394,6 +410,7 @@ git commit -m "feat: add /svelte subpath with mount wrapper"
 Remove `"react": "^19.0.0"`, `"react-dom": "^19.0.0"`, `"vitest-browser-react": "^2.0.0"`.
 
 The `peerDependencies` block should become:
+
 ```json
 "peerDependencies": {
   "msw": "^2.15.0",
@@ -404,6 +421,7 @@ The `peerDependencies` block should become:
 - [ ] **Step 3: Update `exports` map**
 
 Replace the `"exports"` block:
+
 ```json
 "exports": {
   ".": {
@@ -437,16 +455,20 @@ git commit -m "refactor: drop React peerDeps, add /react /vue /svelte exports"
 ### Task 6: Migrate existing mount tests to import from `/react` subpath
 
 **Files:**
+
 - Modify: `test/mount.test.tsx`
 - Modify: `test/mount-without-setup.test.tsx`
 
 - [ ] **Step 1: Update `test/mount.test.tsx`**
 
 Change line 2 from:
+
 ```ts
 import { get, mount } from '../src'
 ```
+
 to:
+
 ```ts
 import { get } from '../src'
 import { mount } from '../src/react'
@@ -455,10 +477,13 @@ import { mount } from '../src/react'
 - [ ] **Step 2: Update `test/mount-without-setup.test.tsx`**
 
 Change line 1 from:
+
 ```ts
 import { mount } from '../src'
 ```
+
 to:
+
 ```ts
 import { mount } from '../src/react'
 ```
@@ -485,6 +510,7 @@ git commit -m "test: migrate mount tests to import from /react subpath"
 ### Task 7: Add Vue and Svelte smoke tests
 
 **Files:**
+
 - Create: `test/vue-smoke.test.ts`
 - Create: `test/fixtures/HelloWorld.svelte`
 - Create: `test/svelte-smoke.test.ts`
@@ -532,6 +558,7 @@ mkdir -p test/fixtures
 ```
 
 Write `test/fixtures/HelloWorld.svelte`:
+
 ```svelte
 <script>
   let { name = 'Svelte' } = $props()
@@ -562,9 +589,7 @@ test('vue mount renders the component', async () => {
 
 test('vue mount with network handlers', async () => {
   const screen = await mount(HelloWorld, {
-    network: [
-      http.get('/api/data', () => HttpResponse.json({ ok: true })),
-    ],
+    network: [http.get('/api/data', () => HttpResponse.json({ ok: true }))],
   })
 
   await expect.element(screen.getByText('Hello from Vue')).toBeVisible()
@@ -590,9 +615,7 @@ test('svelte mount renders the component', async () => {
 
 test('svelte mount with network handlers', async () => {
   const screen = await mount(HelloWorld, {
-    network: [
-      http.get('/api/data', () => HttpResponse.json({ ok: true })),
-    ],
+    network: [http.get('/api/data', () => HttpResponse.json({ ok: true }))],
   })
 
   await expect.element(screen.getByText('Hello from Svelte')).toBeVisible()
@@ -624,6 +647,7 @@ git commit -m "test: add Vue and Svelte smoke tests for subpath mounting"
 ### Task 8: Update README.md
 
 **Files:**
+
 - Modify: `README.md`
 
 - [ ] **Step 1: Rewrite Section 1 (Install and start) with per-framework subsections**
@@ -717,7 +741,10 @@ Solid, ...), build your own adapter with `mountCore`:
 import { render } from 'vitest-browser-lit'
 import { mountCore } from '@yabbadabbadev/pepito'
 
-export function mount(component: unknown, options?: Parameters<typeof mountCore>[2]) {
+export function mount(
+  component: unknown,
+  options?: Parameters<typeof mountCore>[2],
+) {
   return mountCore(component, (c) => render(c as any), options)
 }
 ```
@@ -751,10 +778,13 @@ test passes at runtime.
 - [ ] **Step 2: Update Section 2 (Mount) -- change imports to use the React subpath**
 
 Throughout Section 2, change every:
+
 ```
 import { mount } from '@yabbadabbadev/pepito'
 ```
+
 to:
+
 ```
 import { mount } from '@yabbadabbadev/pepito/react'
 ```
@@ -764,6 +794,7 @@ Keep the `BrowserRouter` reference -- it's React-specific documentation that bel
 - [ ] **Step 3: Update the text at the start of Section 2**
 
 Current opening paragraph:
+
 > `mount` mounts with `vitest-browser-react` and returns its `screen`
 > unwrapped. It requires `setupNetwork` to have run first (section 1), **even
 > for a test with no network**: the coupling is deliberate -- `mount` also
@@ -771,6 +802,7 @@ Current opening paragraph:
 > if it's missing, it fails immediately with a fix instruction.
 
 Replace with:
+
 > `mount` (from `@yabbadabbadev/pepito/react`) mounts with
 > `vitest-browser-react` and returns its `screen` unwrapped. It requires
 > `setupNetwork` to have run first (section 1), **even for a test with no
@@ -795,6 +827,7 @@ git commit -m "docs: framework-agnostic install, subpath examples, custom adapte
 ### Task 9: Update ROADMAP.md
 
 **Files:**
+
 - Modify: `ROADMAP.md`
 
 - [ ] **Step 1: Add the framework decoupling entry**

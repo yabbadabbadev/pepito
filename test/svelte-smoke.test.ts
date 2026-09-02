@@ -11,9 +11,7 @@ test('svelte mount renders the component', async () => {
 
 test('svelte mount with network handlers', async () => {
   const screen = await mount(HelloWorld, {
-    network: [
-      http.get('/api/data', () => HttpResponse.json({ ok: true })),
-    ],
+    network: [http.get('/api/data', () => HttpResponse.json({ ok: true }))],
   })
 
   await expect.element(screen.getByText('Hello from Svelte')).toBeVisible()

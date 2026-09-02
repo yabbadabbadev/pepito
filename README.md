@@ -92,7 +92,10 @@ Solid, …), build your own adapter with `mountCore`:
 import { render } from 'vitest-browser-lit'
 import { mountCore } from '@yabbadabbadev/pepito'
 
-export function mount(component: unknown, options?: Parameters<typeof mountCore>[2]) {
+export function mount(
+  component: unknown,
+  options?: Parameters<typeof mountCore>[2],
+) {
   return mountCore(component, (c) => render(c as any), options)
 }
 ```

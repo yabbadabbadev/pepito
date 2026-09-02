@@ -76,7 +76,11 @@ export async function mount(
   ui: ReactElement,
   options?: MountOptions,
 ): Promise<RenderResult> {
-  return mountCore(ui, c => render(c as ReactElement), options) as Promise<RenderResult>
+  return mountCore(
+    ui,
+    (c) => render(c as ReactElement),
+    options,
+  ) as Promise<RenderResult>
 }
 ```
 
