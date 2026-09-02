@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
-import { get, mount } from '../src'
+import { get } from '../src'
+import { mount } from '../src/react'
 // Imported only for its side effect: setupNetwork() runs when this module
 // loads. No test in this file needs the `worker` itself —
 // `mount({ network: [...] })` already calls worker.use() internally — but
