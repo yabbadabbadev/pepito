@@ -1,10 +1,10 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directory: "/"
+    directory: '/'
     schedule:
       interval: daily
-      time: "21:00"
+      time: '21:00'
     open-pull-requests-limit: 10
     commit-message:
       prefix: build
@@ -12,39 +12,39 @@ updates:
     groups:
       react:
         patterns:
-          - "react"
-          - "react-dom"
-          - "react-router"
-          - "@types/react*"
+          - 'react'
+          - 'react-dom'
+          - 'react-router'
+          - '@types/react*'
       vite:
         patterns:
-          - "@vitejs/*"
+          - '@vitejs/*'
       oxlint:
         patterns:
-          - "oxlint*"
+          - 'oxlint*'
       prettier:
         patterns:
-          - "prettier"
+          - 'prettier'
       testing:
         patterns:
-          - "vitest-browser-react"
-          - "vitest-browser-vue"
-          - "vitest-browser-svelte"
-          - "@vitest/browser*"
-          - "playwright"
-          - "msw"
-          - "vitest"
+          - 'vitest-browser-react'
+          - 'vitest-browser-vue'
+          - 'vitest-browser-svelte'
+          - '@vitest/browser*'
+          - 'playwright'
+          - 'msw'
+          - 'vitest'
       frameworks:
         patterns:
-          - "vue"
-          - "svelte"
-          - "@sveltejs/*"
+          - 'vue'
+          - 'svelte'
+          - '@sveltejs/*'
 
   - package-ecosystem: github-actions
-    directory: "/"
+    directory: '/'
     schedule:
       interval: daily
-      time: "21:00"
+      time: '21:00'
     open-pull-requests-limit: 10
     commit-message:
       prefix: build
@@ -52,4 +52,4 @@ updates:
     groups:
       actions:
         patterns:
-          - "*"
+          - '*'
