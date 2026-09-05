@@ -1,0 +1,55 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: daily
+      time: '21:00'
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - 'react-router'
+          - '@types/react*'
+      vite:
+        patterns:
+          - '@vitejs/*'
+      oxlint:
+        patterns:
+          - 'oxlint*'
+      prettier:
+        patterns:
+          - 'prettier'
+      testing:
+        patterns:
+          - 'vitest-browser-react'
+          - 'vitest-browser-vue'
+          - 'vitest-browser-svelte'
+          - '@vitest/browser*'
+          - 'playwright'
+          - 'msw'
+          - 'vitest'
+      frameworks:
+        patterns:
+          - 'vue'
+          - 'svelte'
+          - '@sveltejs/*'
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: daily
+      time: '21:00'
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      actions:
+        patterns:
+          - '*'

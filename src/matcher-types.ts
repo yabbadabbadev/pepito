@@ -99,13 +99,11 @@ export interface NetworkMatchers<ReturnType = unknown> {
 }
 
 declare module 'vitest' {
-  /* eslint-disable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars */
   interface Assertion<
     R extends void | Promise<void> = void,
     T = unknown,
   > extends NetworkMatchers<T> {}
   interface AsymmetricMatchersContaining extends NetworkMatchers {}
-  /* eslint-enable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars */
   interface ExpectStatic {
     /**
      * Entry point for assertions over the network as a whole, not over a

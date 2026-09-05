@@ -35,7 +35,7 @@ that repo's CI is the acceptance suite.
   `.agents/docs/references/` (agent-facing) or `docs/` (user-facing) the
   moment they're made.
 - **The quality harness is not optional**: strict TS (`strict`,
-  `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`), ESLint
+  `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`), Oxlint
   0 warnings, Prettier clean, 90/90 coverage on `src/`, TDD with the red
   visible, TSDoc on everything exported, and the four bans on AI-looking code
   (comments restating code; generic names; premature abstraction; suspicious
