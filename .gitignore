@@ -2,7 +2,7 @@ node_modules/
 dist/
 dist-pack/
 coverage/
-.eslintcache
+
 **/__screenshots__/
 **/.vitest-attachments/
 .DS_Store
