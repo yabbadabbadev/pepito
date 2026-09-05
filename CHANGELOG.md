@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/yabbadabbadev/pepito/compare/v0.2.0...v0.3.0) (2026-09-05)
+
+
+### Features
+
+* broaden vitest peerDep to 4||5 and migrate to vitest 5 ([#11](https://github.com/yabbadabbadev/pepito/issues/11)) ([8bd6cde](https://github.com/yabbadabbadev/pepito/commit/8bd6cdee27e3d9d6d49b2243ff3f389fecbb3a8a))
+
 ## [0.2.0](https://github.com/yabbadabbadev/pepito/compare/v0.1.1...v0.2.0) (2026-09-02)
 
 
