@@ -1,4 +1,4 @@
-import type { MatcherState } from '@vitest/expect'
+import type { MatcherState } from 'vitest'
 import type { ExpectedResponse } from './matcher-types'
 import type { RequestSpec } from './request-descriptors'
 import { matchesSpec } from './spec-matching'

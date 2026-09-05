@@ -11,7 +11,7 @@ export interface ExpectedResponse {
   exact?: boolean
 }
 
-interface NetworkMatchers<ReturnType = unknown> {
+export interface NetworkMatchers<ReturnType = unknown> {
   /**
    * Checks that the application made a request matching `spec`, by exact
    * `method` and `path` and `searchParams`/`body` by subset. Retries until
@@ -98,23 +98,14 @@ interface NetworkMatchers<ReturnType = unknown> {
   toHaveNoUnhandledRequests(): Promise<ReturnType>
 }
 
-// Augments '@vitest/expect', not 'vitest': in this version (vitest@4.1.10),
-// `declare module 'vitest'` compiles without error but the merge into
-// `Assertion` never actually applies (the global call's own `Assertion<T>`
-// ends up without the new methods). The vitest package itself augments its
-// own global types against '@vitest/expect' directly (see
-// node_modules/vitest/dist/chunks/global.d.*.d.ts) — same pattern, verified
-// here because the spike (which does use 'vitest') doesn't reproduce the
-// failure. Details in
-// docs/knowledge/augmentacion-tipos-vitest-expect.md.
-declare module '@vitest/expect' {
-  // Empty interfaces: this is the module-augmentation mechanism, not an
-  // oversight (same criterion as the `**/*.d.ts` block in eslint.config.js,
-  // which doesn't cover this file since it isn't a `.d.ts`).
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  interface Assertion<T = any> extends NetworkMatchers<T> {}
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+declare module 'vitest' {
+  /* eslint-disable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars */
+  interface Assertion<
+    R extends void | Promise<void> = void,
+    T = unknown,
+  > extends NetworkMatchers<T> {}
   interface AsymmetricMatchersContaining extends NetworkMatchers {}
+  /* eslint-enable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars */
   interface ExpectStatic {
     /**
      * Entry point for assertions over the network as a whole, not over a
@@ -125,6 +116,6 @@ declare module '@vitest/expect' {
      * await expect.network().toHaveNoUnhandledRequests()
      * ```
      */
-    network(): Assertion<unknown>
+    network(): Assertion<void>
   }
 }

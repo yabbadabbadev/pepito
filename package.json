@@ -63,7 +63,7 @@
   },
   "peerDependencies": {
     "msw": "^2.15.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0 || ^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -73,9 +73,9 @@
     "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.67.0",
     "@vitejs/plugin-react": "^6.0.5",
-    "@vitest/browser": "^4.1.10",
-    "@vitest/browser-playwright": "^4.1.10",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/browser": "^5.0.0",
+    "@vitest/browser-playwright": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
@@ -92,10 +92,10 @@
     "react-router": "^8.3.0",
     "svelte": "^5.57.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10",
-    "vitest-browser-react": "^2.2.0",
-    "vitest-browser-svelte": "^3.0.0",
-    "vitest-browser-vue": "^2.1.0",
+    "vitest": "^5.0.0",
+    "vitest-browser-react": "^2.3.0",
+    "vitest-browser-svelte": "^3.1.0",
+    "vitest-browser-vue": "^3.1.0",
     "vue": "^3.5.42"
   },
   "msw": {
