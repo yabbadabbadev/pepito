@@ -1,0 +1,35 @@
+name: dependabot-automerge
+
+# Approves and queue-merges Dependabot patch updates. The merge itself only
+# lands once the `quality` check passes: that guarantee lives in branch
+# protection on main, not here. Without a required status check, `--auto`
+# merges immediately and this job would gate nothing. Minor and major stay
+# manual on purpose — semver's compatibility promise is about the dependency's
+# declared API, not about the event shapes this package measures.
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Approve and enable auto-merge for patch updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
