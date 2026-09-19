@@ -1,11 +1,4 @@
 name: dependabot-automerge
-
-# Approves and queue-merges Dependabot patch updates. The merge itself only
-# lands once the `quality` check passes: that guarantee lives in branch
-# protection on main, not here. Without a required status check, `--auto`
-# merges immediately and this job would gate nothing. Minor and major stay
-# manual on purpose — semver's compatibility promise is about the dependency's
-# declared API, not about the event shapes this package measures.
 on: pull_request
 
 permissions:
