@@ -52,7 +52,8 @@ jobs:
       - name: Approve and enable auto-merge for patch and minor updates
         if: >-
           (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-minor') &&
+          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+          steps.metadata.outputs.dependency-group == 'security') &&
           steps.peers.outputs.changed == 'false'
         run: |
           gh pr review --approve "$PR_URL"
