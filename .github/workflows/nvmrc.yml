@@ -1,0 +1,98 @@
+name: nvmrc
+
+# Keeps .nvmrc on the newest Node.js LTS line. Opens a PR and stops there:
+# the CI run it triggers is the proof, and a human merges. GITHUB_TOKEN
+# only; no secret. The PR lands in `action_required` like release-please's:
+# a human approves the run, the checks prove it, a human merges.
+on:
+  schedule:
+    # Mondays at 06:00 UTC.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: nvmrc
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve the newest LTS
+        id: lts
+        run: |
+          version="$(curl -fsSL https://nodejs.org/dist/index.json \
+            | jq -r '[.[] | select(.lts != false)][0].version' \
+            | sed 's/^v//')"
+          if [ -z "$version" ] || [ "$version" = 'null' ]; then
+            echo "Could not resolve the newest LTS from nodejs.org" >&2
+            exit 1
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Resolved an unexpected LTS version: '$version'" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether an update is needed
+        id: check
+        env:
+          VERSION: ${{ steps.lts.outputs.version }}
+        run: |
+          current="$(tr -d '[:space:]' < .nvmrc)"
+          highest="$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n1)"
+          if [ "$current" = "$VERSION" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo ".nvmrc already tracks $current"
+          elif [ "$highest" != "$VERSION" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo ".nvmrc tracks $current, ahead of the newest LTS $VERSION; not downgrading"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo ".nvmrc $current -> $VERSION"
+          fi
+
+      - name: Open the PR
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          set -euo pipefail
+          version="$VERSION"
+          branch="chore/nvmrc-$version"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          printf '%s\n' "$version" > .nvmrc
+          git add .nvmrc
+          git commit -m "build: track Node.js LTS $version"
+          git push --force origin "$branch"
+          # A push made with GITHUB_TOKEN does not trigger workflows, not even
+          # pull_request synchronize on the bot's own branch. Closing older
+          # PRs and opening a fresh one per version is what gets CI to run.
+          gh pr list --state open --limit 100 --json number,headRefName,isCrossRepository \
+            | jq -r --arg current "$branch" '.[] | select(.isCrossRepository == false) | select(.headRefName | startswith("chore/nvmrc-")) | select(.headRefName != $current) | .number' \
+            | xargs -r -n1 gh pr close
+          existing="$(gh pr list --head "$branch" --state open --json number -q '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "PR #$existing already tracks $version; leaving it open."
+            exit 0
+          fi
+          closed="$(gh pr list --head "$branch" --state closed --json number -q '.[0].number // empty')"
+          if [ -n "$closed" ]; then
+            # A human closed this version on purpose; reopening it weekly would
+            # fight that decision. The next Node patch opens a new branch.
+            echo "PR #$closed for $version was closed; not reopening it."
+            exit 0
+          fi
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "build: track Node.js LTS $version" \
+            --body "Newest Node.js LTS is \`$version\` ([release notes](https://nodejs.org/en/blog/release/v$version)). CI on this PR is the proof; a human merges."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.lts.outputs.version }}
