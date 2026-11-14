@@ -1,6 +1,6 @@
 {
   "name": "@yabbadabbadev/pepito",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Network test utilities for Vitest browser mode: application mounting and matchers over the traffic observed by MSW",
   "type": "module",
   "license": "MIT",
@@ -62,7 +62,7 @@
     "format:check": "prettier --check ."
   },
   "peerDependencies": {
-    "msw": "^2.15.0",
+    "msw": "^2.15.0 || ^3.0.0",
     "vitest": "^4.0.0 || ^5.0.0"
   },
   "devDependencies": {
@@ -73,7 +73,7 @@
     "@vitest/browser": "^5.0.0",
     "@vitest/browser-playwright": "^5.0.0",
     "@vitest/coverage-v8": "^5.0.0",
-    "msw": "^2.15.0",
+    "msw": "^3.0.4",
     "oxlint": "^1.81.0",
     "playwright": "^1.62.1",
     "prettier": "^3.9.6",
