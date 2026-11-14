@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/yabbadabbadev/pepito/compare/v0.3.0...v0.3.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* support msw 3 alongside msw 2 ([#57](https://github.com/yabbadabbadev/pepito/issues/57)) ([e2953b2](https://github.com/yabbadabbadev/pepito/commit/e2953b257b1345b458afe821cd302697e058529a))
+
 ## [0.3.0](https://github.com/yabbadabbadev/pepito/compare/v0.2.0...v0.3.0) (2026-09-05)
 
 
