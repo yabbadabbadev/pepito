@@ -6,10 +6,31 @@ updates:
       interval: daily
       time: '21:00'
     open-pull-requests-limit: 10
+    versioning-strategy: increase
     commit-message:
       prefix: build
       include: scope
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+      exclude:
+        - '@yabbadabbadev/*'
     groups:
+      security:
+        applies-to: security-updates
+        update-types:
+          - 'minor'
+          - 'patch'
+        patterns:
+          - '*'
+      security-major:
+        applies-to: security-updates
+        update-types:
+          - 'major'
+        patterns:
+          - '*'
       react:
         patterns:
           - 'react'
