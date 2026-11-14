@@ -115,8 +115,11 @@ console:
 import { setupNetwork } from '@yabbadabbadev/pepito'
 import { handlers } from './handlers'
 
-setupNetwork(handlers, { onUnhandledRequest: 'error' })
+setupNetwork(handlers, { onUnhandledFrame: 'error' })
 ```
+
+`onUnhandledFrame` is the msw 3 name; on msw 2 the same option is
+`onUnhandledRequest`.
 
 Importing anything from `pepito` — even just `setupNetwork` — already
 brings the network matchers along as `expect` types: there's no separate
