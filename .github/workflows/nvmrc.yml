@@ -45,9 +45,13 @@ jobs:
           VERSION: ${{ steps.lts.outputs.version }}
         run: |
           current="$(tr -d '[:space:]' < .nvmrc)"
+          highest="$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n1)"
           if [ "$current" = "$VERSION" ]; then
             echo "needed=false" >> "$GITHUB_OUTPUT"
             echo ".nvmrc already tracks $current"
+          elif [ "$highest" != "$VERSION" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo ".nvmrc tracks $current, ahead of the newest LTS $VERSION; not downgrading"
           else
             echo "needed=true" >> "$GITHUB_OUTPUT"
             echo ".nvmrc $current -> $VERSION"
@@ -69,12 +73,19 @@ jobs:
           # A push made with GITHUB_TOKEN does not trigger workflows, not even
           # pull_request synchronize on the bot's own branch. Closing older
           # PRs and opening a fresh one per version is what gets CI to run.
-          gh pr list --state open --json number,headRefName,isCrossRepository \
+          gh pr list --state open --limit 100 --json number,headRefName,isCrossRepository \
             | jq -r --arg current "$branch" '.[] | select(.isCrossRepository == false) | select(.headRefName | startswith("chore/nvmrc-")) | select(.headRefName != $current) | .number' \
             | xargs -r -n1 gh pr close
-          existing="$(gh pr list --head "$branch" --state open --json number -q '.[0].number')"
+          existing="$(gh pr list --head "$branch" --state open --json number -q '.[0].number // empty')"
           if [ -n "$existing" ]; then
             echo "PR #$existing already tracks $version; leaving it open."
+            exit 0
+          fi
+          closed="$(gh pr list --head "$branch" --state closed --json number -q '.[0].number // empty')"
+          if [ -n "$closed" ]; then
+            # A human closed this version on purpose; reopening it weekly would
+            # fight that decision. The next Node patch opens a new branch.
+            echo "PR #$closed for $version was closed; not reopening it."
             exit 0
           fi
           gh pr create \
