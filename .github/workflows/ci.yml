@@ -105,3 +105,15 @@ jobs:
 
       - name: Tests with coverage (90/90 threshold enforced in config)
         run: npm run coverage
+
+      - name: Tests against the oldest supported msw (2.15.0)
+        # Backs the `^2.15.0 || ^3.0.0` peer range with a real run. `npm ci`
+        # has already produced a locked tree; installing msw without
+        # --package-lock=false keeps the rest of it intact (measured
+        # 2026-11-14: playwright stayed 1.65.0 and vite was still present).
+        # The worker is regenerated for 2.15.0 so the run never pairs a 3.x
+        # script with a 2.x client.
+        run: |
+          npm i --no-save msw@2.15.0
+          npx msw init public --save
+          npm test
