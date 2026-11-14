@@ -95,3 +95,12 @@ previous section.
   the tarball is the check that can.
 - Update this file in the same PR. A build swap with no decision record here
   is the thing this file exists to prevent.
+
+## Lockfile changes run under the pinned Node
+
+npm's lockfile format moves with npm. Measured 2026-11-14: a local npm 10.8.3
+rewrote a `package-lock.json` produced by npm 11 on
+`npm install --package-lock-only` and stripped 42 `libc` fields from optional
+platform packages. The committed lockfile is npm-11-shaped, so run any
+command that rewrites it under the Node from `.nvmrc` (`nvm use && npm …`)
+and keep the diff to the line you meant to change.

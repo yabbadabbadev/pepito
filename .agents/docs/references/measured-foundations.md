@@ -595,7 +595,8 @@ code marked experimental.
 
 This is the reason `src/msw-events.ts` is the only file in the package that
 touches `worker.events` — so the upstream migration costs one file, not a
-sweep.
+sweep. That rewrite landed in msw 3 without breaking the five events this
+package listens to; section 17 records the check.
 
 ## 17. msw 3 keeps the event contract (verified 2026-11-14)
 
