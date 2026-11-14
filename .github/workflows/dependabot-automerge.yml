@@ -18,8 +18,42 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Approve and enable auto-merge for patch updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+      # The published peer range is the library's contract. A Dependabot
+      # minor bump can rewrite it with no code change (measured: PR #55
+      # moved msw from ^2.15.0 to ^3.0.4), which would narrow what pepito
+      # accepts inside a pepito patch release. Those PRs always wait for a
+      # human. Any failure reading the two files also defers to a human.
+      - name: Does the PR change peerDependencies?
+        id: peers
+        run: |
+          set -uo pipefail
+          if ! base="$(gh api "repos/$REPO/contents/package.json?ref=$BASE_SHA" -q .content | base64 -d | jq -S .peerDependencies)"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Could not read the base package.json; leaving the PR for a human." >&2
+            exit 0
+          fi
+          if ! head="$(gh api "repos/$REPO/contents/package.json?ref=$HEAD_SHA" -q .content | base64 -d | jq -S .peerDependencies)"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Could not read the head package.json; leaving the PR for a human." >&2
+            exit 0
+          fi
+          if [ "$base" = "$head" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "peerDependencies changed; leaving the PR for a human." >&2
+          fi
+        env:
+          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Approve and enable auto-merge for patch and minor updates
+        if: >-
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor') &&
+          steps.peers.outputs.changed == 'false'
         run: |
           gh pr review --approve "$PR_URL"
           gh pr merge --auto --squash "$PR_URL"
