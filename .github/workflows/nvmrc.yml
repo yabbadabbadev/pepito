@@ -33,25 +33,31 @@ jobs:
             echo "Could not resolve the newest LTS from nodejs.org" >&2
             exit 1
           fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Resolved an unexpected LTS version: '$version'" >&2
+            exit 1
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Decide whether an update is needed
         id: check
+        env:
+          VERSION: ${{ steps.lts.outputs.version }}
         run: |
           current="$(tr -d '[:space:]' < .nvmrc)"
-          if [ "$current" = "${{ steps.lts.outputs.version }}" ]; then
+          if [ "$current" = "$VERSION" ]; then
             echo "needed=false" >> "$GITHUB_OUTPUT"
             echo ".nvmrc already tracks $current"
           else
             echo "needed=true" >> "$GITHUB_OUTPUT"
-            echo ".nvmrc $current -> ${{ steps.lts.outputs.version }}"
+            echo ".nvmrc $current -> $VERSION"
           fi
 
       - name: Open the PR
         if: steps.check.outputs.needed == 'true'
         run: |
           set -euo pipefail
-          version="${{ steps.lts.outputs.version }}"
+          version="$VERSION"
           branch="chore/nvmrc-$version"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -66,6 +72,11 @@ jobs:
           gh pr list --state open --json number,headRefName,isCrossRepository \
             | jq -r --arg current "$branch" '.[] | select(.isCrossRepository == false) | select(.headRefName | startswith("chore/nvmrc-")) | select(.headRefName != $current) | .number' \
             | xargs -r -n1 gh pr close
+          existing="$(gh pr list --head "$branch" --state open --json number -q '.[0].number')"
+          if [ -n "$existing" ]; then
+            echo "PR #$existing already tracks $version; leaving it open."
+            exit 0
+          fi
           gh pr create \
             --base main \
             --head "$branch" \
@@ -73,3 +84,4 @@ jobs:
             --body "Newest Node.js LTS is \`$version\` ([release notes](https://nodejs.org/en/blog/release/v$version)). CI on this PR is the proof; a human merges."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.lts.outputs.version }}
