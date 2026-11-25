@@ -80,7 +80,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router": "^8.5.2",
-    "svelte": "^5.57.0",
+    "svelte": "^5.58.0",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0",
     "vitest-browser-react": "^2.3.0",
